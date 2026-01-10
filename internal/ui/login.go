@@ -1,9 +1,9 @@
 package ui
 
 import (
+	"cosoft-cli/internal/api"
 	"errors"
 	"fmt"
-	"log"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -17,22 +17,16 @@ func required(s string) error {
 	return nil
 }
 
-// LoginCredentials holds the login form data
-type LoginCredentials struct {
-	Email    string
-	Password string
-}
-
 // LoginModel is a Bubbletea model for the login form
 type LoginModel struct {
 	form        *huh.Form
-	credentials *LoginCredentials
+	credentials *api.LoginPayload
 	quitting    bool
 }
 
 // NewLoginModel creates a new login form model
 func NewLoginModel() *LoginModel {
-	creds := &LoginCredentials{}
+	creds := &api.LoginPayload{}
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -94,12 +88,12 @@ func (m *LoginModel) View() string {
 }
 
 // GetCredentials returns the entered credentials
-func (m *LoginModel) GetCredentials() *LoginCredentials {
+func (m *LoginModel) GetCredentials() *api.LoginPayload {
 	return m.credentials
 }
 
 // LoginFormWithLayout creates a login form wrapped in a layout
-func (ui *UI) LoginFormWithLayout() (*LoginCredentials, error) {
+func (ui *UI) LoginFormWithLayout() (*api.LoginPayload, error) {
 	loginModel := NewLoginModel()
 
 	// Wrap in layout
@@ -123,34 +117,4 @@ func (ui *UI) LoginFormWithLayout() (*LoginCredentials, error) {
 	}
 
 	return nil, fmt.Errorf("failed to retrieve login credentials")
-}
-
-// LoginForm is the original blocking version (kept for backward compatibility)
-func (ui *UI) LoginForm() {
-	email := ""
-	password := ""
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewNote().
-				Title("Login").
-				Description("Please insert your credentials to authenticate"),
-			huh.NewInput().
-				Validate(required).
-				Title("Email address").
-				Value(&email),
-			huh.NewInput().
-				EchoMode(huh.EchoModePassword).
-				Validate(required).
-				Title("Password").
-				Value(&password),
-		),
-	)
-
-	err := form.Run()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println(email, password)
 }
