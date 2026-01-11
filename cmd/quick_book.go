@@ -12,9 +12,10 @@ import (
 
 // quickBookCmd represents the quickBook command
 var quickBookCmd = &cobra.Command{
-	Use:   "quick-book",
-	Short: "Quickly book a meeting room",
-	Long:  `Quick book allows you to quickly reserve a meeting room for a specified duration.`,
+	Use:     "quick-book",
+	Short:   "Quickly book a meeting room",
+	Long:    `Quick book allows you to quickly reserve a meeting room for a specified duration.`,
+	PreRunE: requireAuth,
 	Run: func(cmd *cobra.Command, args []string) {
 		ui := ui.NewUI()
 		if err := ui.StartApp("quick-book", false); err != nil {

@@ -4,8 +4,11 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"cosoft-cli/internal/auth"
+	"cosoft-cli/internal/settings"
 	"cosoft-cli/internal/ui"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -18,6 +21,7 @@ var rootCmd = &cobra.Command{
 	Long: `Cosoft CLI allows you to interact with the Cosoft's booking system without using the website.
 	Through it, you can book a meeting room, list, see and cancel any reservation you've previously made.
 	`,
+	PreRunE: requireAuth,
 	Run: func(cmd *cobra.Command, args []string) {
 		ui := ui.NewUI()
 		if err := ui.StartApp("landing", true); err != nil {
@@ -25,6 +29,11 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		err := settings.LoadConfiguration()
+
+		if err != nil {
+			log.Fatal(err)
+		}
 		// Check for existence of ~/.cosoft and its content
 	},
 	// Uncomment the following line if your bare application
@@ -51,4 +60,9 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func requireAuth(cmd *cobra.Command, args []string) error {
+	authService := auth.NewAuthService()
+	return authService.RequiresAuth()
 }

@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func (a *Api) Login(payload LoginPayload) error {
+func (a *Api) Login(payload *LoginPayload) error {
 	values := map[string]string{
 		"email":    payload.Email,
 		"password": payload.Password,
