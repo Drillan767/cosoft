@@ -14,6 +14,7 @@ type AppModel struct {
 	quitting       bool
 	landingModel   *LandingModel
 	quickBookModel *QuickBookModel
+	browseModel    *BrowseModel
 	// Add others
 }
 
@@ -33,6 +34,7 @@ func NewAppModel(startPage string, allowBackNav bool) *AppModel {
 		allowBackNav:   allowBackNav,
 		landingModel:   NewLandingModel(),
 		quickBookModel: NewQuickBookModel(),
+		browseModel:    NewBrowseModel(),
 		// Add others
 	}
 }
@@ -43,6 +45,8 @@ func (m *AppModel) Init() tea.Cmd {
 		return m.landingModel.Init()
 	case "quick-book":
 		return m.quickBookModel.Init()
+	case "browse":
+		return m.browseModel.Init()
 	default:
 		return m.landingModel.Init()
 	}
@@ -61,6 +65,8 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.Page {
 		case "quick-book":
 			return m, m.quickBookModel.Init()
+		case "browse":
+			return m, m.browseModel.Init()
 		default:
 			return m, nil
 		}
@@ -94,7 +100,11 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newModel, cmd := m.quickBookModel.Update(msg)
 		m.quickBookModel = newModel.(*QuickBookModel)
 		return m, cmd
-	// Add other pages here as you create them
+	case PageBrowse:
+		newModel, cmd := m.browseModel.Update(msg)
+		m.browseModel = newModel.(*BrowseModel)
+		return m, cmd
+		// Add other pages here as you create them
 	}
 
 	return m, nil
@@ -111,6 +121,8 @@ func (m *AppModel) View() string {
 		return m.landingModel.View()
 	case PageQuickBook:
 		return m.quickBookModel.View()
+	case PageBrowse:
+		return m.browseModel.View()
 	// Others
 	default:
 		return "unknown page"
