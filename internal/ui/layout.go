@@ -77,15 +77,36 @@ func (l *Layout) updateStyles() {
 		Padding(0, 1).
 		Width(l.width)
 
-	// Container style
-	if l.config.ShowBorder {
+	contentWidth := l.width
+	if l.config.ShowBorder && contentWidth > 0 {
+		contentWidth = contentWidth - 6
+		if contentWidth < 0 {
+			contentWidth = 0
+		}
 		l.containerStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color(l.config.BorderColor)).
-			Padding(1, 2)
-	} else {
+			Padding(1, 2).
+			Width(contentWidth)
+	} else if contentWidth > 0 {
+		contentWidth = contentWidth - 4 // 4 for padding (2 left + 2 right)
+		if contentWidth < 0 {
+			contentWidth = 0
+		}
 		l.containerStyle = lipgloss.NewStyle().
-			Padding(1, 2)
+			Padding(1, 2).
+			Width(contentWidth)
+	} else {
+		// Fallback when width is not yet set
+		if l.config.ShowBorder {
+			l.containerStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color(l.config.BorderColor)).
+				Padding(1, 2)
+		} else {
+			l.containerStyle = lipgloss.NewStyle().
+				Padding(1, 2)
+		}
 	}
 }
 
