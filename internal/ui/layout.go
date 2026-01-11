@@ -108,6 +108,13 @@ func (l *Layout) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (l *Layout) View() string {
+	contentView := l.content.View()
+
+	// If content is empty (quitting), return empty string
+	if contentView == "" {
+		return ""
+	}
+
 	var sections []string
 
 	// Add header if enabled
@@ -117,7 +124,7 @@ func (l *Layout) View() string {
 	}
 
 	// Add content
-	content := l.containerStyle.Render(l.content.View())
+	content := l.containerStyle.Render(contentView)
 	sections = append(sections, content)
 
 	// Add footer if enabled

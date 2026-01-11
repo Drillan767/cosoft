@@ -6,7 +6,5 @@ package main
 import "cosoft-cli/cmd"
 
 func main() {
-	defCmd := "landingCmd"
-
-	cmd.Execute(defCmd)
+	cmd.Execute()
 }
