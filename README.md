@@ -2,81 +2,52 @@
 
 This TUI tool's goal is to simplify any meeting room's booking without having to use the actual website.
 
+## How it works
+
+1. You login for the 1st time using your Cosoft credentials
+2. The JWT is stored locally in `~/.cosoft`, alongside other files such as the list of available rooms (to avoid keeping fetching them) and your favorites among them.
+3. Once logged in, you can perform several actions
+
 ## Main functions
 
 ### Calendar view
 
-## On startup 
+Display an ASCII representation of a calendar, displaying when rooms are used and if you're the one booking them.
 
-- Check if refresh token available through `zalando/go-keyring`
-    - If exist, attempt connect
-    - If connect fails or nothing found in keyring, display login screen
+### Quick book
 
-- Check if the directory `~/.cosoft-cli` exists and have both `settings.yml` and `rooms.json`
-    - If exist, load and parse the informations
-    - If not, create the files
+Will book the 1st available room depending on if the room is available right now, and available long enough for you to book it with the duration you picked.
 
-- Redirect to "main"
+If one of the rooms is your favorite, will pick it for you.
 
-## Main display
+Once the booking is done, you'll get a fancy table that will summarize the details of the booking:
 
-- Calendar view of upcoming reservations in grid
-- Menu with quick actions
-    - Quick book
-    - Browse & book
-    - Upcoming reservations (3)
-    - Previous reservations
-    - Settings
-    - Quit
+- Room name
+- Start time -> end time
 
-## Book first available room
+### Browse and book
 
-- User selects the duration (30mn / 1h)
-- Load all rooms informations / bookings
-- Check if any is free for the next span of time previously picked, right now
-- If any of the user's favorite rooms are available, pick those first
-- Proceed to do the booking / payment on the fly
-- Display a table with booking's informations
+Will allow you to pick a date, time and duration, that will display all rooms available with these filters.
 
-## Browse & book
+Once the booking is done, you'll get a fancy table that will summarize the details of the booking:
 
-User will go through a multistep form
+- Room name
+- Start time -> end time
 
-- Step 1
-    - User picks the date and time they want to make a booking (default is today, rounded to the closest quarter (14:04 => show rooms available from 14:00 as well))
-- Step 2
-    - User picks a room from the filtered result and will be able to set one of them as favorite (this will update the yml file)
-- Step 3
-    - User picks a duration time
-- Result
-    - Proceed to do the booking / payment on the fly
-    - Display a table with booking's informations
+### Upcoming reservations (With dynamic number)
 
-## Default options
+Will list all future bookings you've done. The list contains all details about the reservation such as the meeting room, date and time of booking.
 
-User will be able to define the default duration for his booking. This will simply select the option by default but the user will still be able to pick something else
+It will also allow you to cancel it.
 
-- Favorite rooms
-- Prefered duration: 30mn / 1h / 2h
+### Previous reservations
 
-## Upcoming reservations
-
-Will display all reservations as a list. The list itself will contain all needed informations, such as date, time (09:00 -> 10:00) and meeting room. Selecting a date (then confirming) will cancel the reservation
-
-## Previous reservations
-
-**Note** : This requires to know if such information is available.
-
-Would display a list of reservations the user made. When picking one, user will be able to book the related meeting room again, only at date / times where the room is available
-
-## Quit
-
-Take a wild fucking guess
+Will allow you to have an history of your past reservations, but selecting one of them will allow you to book the specific room again, but you'll have to pick a new date, time and duration for this.
 
 
-# CLI actions
+## CLI
 
-All the options from the main menu will also be available as a CLI command to skip a step if you already know what you need
+All these functions are available directly from the main command itself.
 
 | Command                 | Function                  |
 |-------------------------|---------------------------|
