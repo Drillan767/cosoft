@@ -9,7 +9,7 @@ type QuickBookPayload struct {
 	Duration int
 }
 
-type BrowePayload struct {
+type BrowsePayload struct {
 	Room      uint
 	StarDate  string
 	StartHour string

@@ -5,9 +5,33 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 )
+
+// LoginModel is a Bubbletea model for the login form
+type LoginModel struct {
+	form        *huh.Form
+	credentials *api.LoginPayload
+	token       string
+	spinner     spinner.Model
+	err         error
+	quitting    bool
+	loading     bool
+}
+
+type loginSuccessMsg struct {
+	token string
+}
+
+type loginErrorMsg struct {
+	err error
+}
+
+func (m *LoginModel) Init() tea.Cmd {
+	return m.form.Init()
+}
 
 func required(s string) error {
 	if s == "" {
@@ -17,11 +41,18 @@ func required(s string) error {
 	return nil
 }
 
-// LoginModel is a Bubbletea model for the login form
-type LoginModel struct {
-	form        *huh.Form
-	credentials *api.LoginPayload
-	quitting    bool
+func (m *LoginModel) performLogin() tea.Cmd {
+	return func() tea.Msg {
+		apiClient := api.NewApi()
+
+		token, err := apiClient.Login(m.credentials)
+
+		if err != nil {
+			return loginErrorMsg{err: err}
+		}
+
+		return loginSuccessMsg{token: token}
+	}
 }
 
 // NewLoginModel creates a new login form model
@@ -45,17 +76,19 @@ func NewLoginModel() *LoginModel {
 		),
 	)
 
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+
 	return &LoginModel{
 		form:        form,
 		credentials: creds,
+		spinner:     s,
+		loading:     false,
 	}
 }
 
-func (m *LoginModel) Init() tea.Cmd {
-	return m.form.Init()
-}
-
 func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -63,6 +96,43 @@ func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
+	case loginSuccessMsg:
+		m.token = msg.token // Store the token!
+		m.loading = false
+		m.quitting = true
+		return m, tea.Quit
+
+	case loginErrorMsg:
+		m.loading = false
+		m.err = msg.err
+		// Reset form to allow retry
+		m.form = huh.NewForm(
+			huh.NewGroup(
+				huh.NewNote().
+					Title("Login").
+					Description("Please insert your credentials to authenticate"),
+				huh.NewInput().
+					Validate(required).
+					Title("Email address").
+					Value(&m.credentials.Email),
+				huh.NewInput().
+					EchoMode(huh.EchoModePassword).
+					Validate(required).
+					Title("Password").
+					Value(&m.credentials.Password),
+			),
+		)
+		return m, m.form.Init()
+	case spinner.TickMsg:
+		if m.loading {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
+		}
+	}
+
+	if m.loading {
+		return m, nil
 	}
 
 	// Update form
@@ -73,8 +143,11 @@ func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Check if form is complete
 	if m.form.State == huh.StateCompleted {
-		m.quitting = true
-		return m, tea.Quit
+		m.loading = true
+		return m, tea.Batch(
+			m.spinner.Tick,
+			m.performLogin(),
+		)
 	}
 
 	return m, cmd
@@ -84,6 +157,15 @@ func (m *LoginModel) View() string {
 	if m.quitting {
 		return ""
 	}
+
+	if m.loading {
+		return fmt.Sprintf("\n%s Logging in...", m.spinner.View())
+	}
+
+	if m.err != nil {
+		return m.form.View() + fmt.Sprintf("\n\n❌ Error: %v\n", m.err)
+	}
+
 	return m.form.View()
 }
 
@@ -92,8 +174,12 @@ func (m *LoginModel) GetCredentials() *api.LoginPayload {
 	return m.credentials
 }
 
+func (m *LoginModel) GetToken() string {
+	return m.token
+}
+
 // LoginFormWithLayout creates a login form wrapped in a layout
-func (ui *UI) LoginFormWithLayout() (*api.LoginPayload, error) {
+func (ui *UI) LoginForm() (*LoginModel, error) {
 	loginModel := NewLoginModel()
 
 	// Wrap in layout
@@ -112,7 +198,7 @@ func (ui *UI) LoginFormWithLayout() (*api.LoginPayload, error) {
 	// Extract the login model from the layout
 	if layoutModel, ok := finalModel.(*Layout); ok {
 		if loginModel, ok := layoutModel.GetContent().(*LoginModel); ok {
-			return loginModel.GetCredentials(), nil
+			return loginModel, nil
 		}
 	}
 

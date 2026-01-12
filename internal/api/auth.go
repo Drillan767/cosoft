@@ -8,7 +8,18 @@ import (
 	"net/http"
 )
 
-func (a *Api) Login(payload *LoginPayload) error {
+type UserResponse struct {
+	JwtToken string `json:"JwtToken"`
+	Id       string `json:"Id"`
+}
+
+type AuthPayload struct {
+	IsAuth  bool          `json:"isAuth"`
+	Message string        `json:"Message"`
+	User    *UserResponse `json:"User"`
+}
+
+func (a *Api) Login(payload *LoginPayload) (string, error) {
 	values := map[string]string{
 		"email":    payload.Email,
 		"password": payload.Password,
@@ -30,11 +41,17 @@ func (a *Api) Login(payload *LoginPayload) error {
 		log.Fatal(err)
 	}
 
-	fmt.Println(resp.Body)
+	defer resp.Body.Close()
 
-	return nil
-}
+	response := AuthPayload{}
 
-func (a *Api) LoginFromRefreshToken() {
-	// ...
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return "", err
+	}
+
+	if !response.IsAuth || response.User == nil {
+		return "", fmt.Errorf("Wrong username / password")
+	}
+
+	return response.User.JwtToken, nil
 }

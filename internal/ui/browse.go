@@ -11,11 +11,11 @@ import (
 
 type BrowseModel struct {
 	form    *huh.Form
-	choices *api.BrowePayload
+	choices *api.BrowsePayload
 }
 
 func NewBrowseModel() *BrowseModel {
-	choices := &api.BrowePayload{}
+	choices := &api.BrowsePayload{}
 
 	form := huh.NewForm(
 		huh.NewGroup(
@@ -104,6 +104,6 @@ func (b *BrowseModel) View() string {
 	return b.form.View()
 }
 
-func (b *BrowseModel) GetChoice() *api.BrowePayload {
+func (b *BrowseModel) GetChoice() *api.BrowsePayload {
 	return b.choices
 }

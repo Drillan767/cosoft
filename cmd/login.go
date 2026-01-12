@@ -4,7 +4,9 @@ Copyright © 2026 NAME HERE <jlevarato@proton.me>
 package cmd
 
 import (
+	"cosoft-cli/internal/auth"
 	"cosoft-cli/internal/ui"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -15,15 +17,23 @@ var loginCmd = &cobra.Command{
 	Short: "Authenticates you to Cosoft",
 	Run: func(cmd *cobra.Command, args []string) {
 		ui := ui.NewUI()
-		creds, err := ui.LoginFormWithLayout()
+		loginModel, err := ui.LoginForm()
 		if err != nil {
 			cmd.PrintErrf("Error: %v\n", err)
 			return
 		}
 
-		// Handle the credentials here
-		cmd.Printf("Successfully logged in as: %s\n", creds.Email)
-		// TODO: Add your authentication logic here
+		authService := auth.NewAuthService()
+
+		// Calculate expiration (1 week from now)
+		expirationDate := time.Now().Add(7 * 24 * time.Hour)
+
+		if err := authService.SaveToken(loginModel.GetToken(), expirationDate); err != nil {
+			cmd.PrintErrf("Failed to save token: %v\n", err)
+			return
+		}
+
+		cmd.Printf("✓ Successfully logged in!\n")
 	},
 }
 

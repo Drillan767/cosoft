@@ -1,12 +1,12 @@
 package auth
 
 import (
-	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/settings"
 	"cosoft-cli/internal/ui"
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 )
 
 type AuthService struct {
@@ -20,7 +20,7 @@ func NewAuthService() *AuthService {
 }
 
 func (a *AuthService) IsAuthenticated() bool {
-	tokenPath := a.configPath + "/refresh_token.json"
+	tokenPath := a.configPath + "/jwt_token.json"
 
 	data, err := os.ReadFile(tokenPath)
 
@@ -28,13 +28,23 @@ func (a *AuthService) IsAuthenticated() bool {
 		return false
 	}
 
-	var rt settings.RefreshToken
+	var rt settings.JwtToken
 
-	if err := json.Unmarshal(data, &err); err != nil {
+	if err := json.Unmarshal(data, &rt); err != nil {
 		return false
 	}
 
-	return rt.RefreshToken != ""
+	// Check token exists
+	if rt.Token == "" {
+		return false
+	}
+
+	// Check if token is not expired
+	if time.Now().After(rt.ExpirationDate) {
+		return false
+	}
+
+	return true
 }
 
 func (a *AuthService) RequiresAuth() error {
@@ -44,26 +54,32 @@ func (a *AuthService) RequiresAuth() error {
 
 	// Not authenticated, show form
 	ui := ui.NewUI()
-	creds, err := ui.LoginFormWithLayout()
+	loginModel, err := ui.LoginForm()
+
 	if err != nil {
 		return err
 	}
 
-	api := api.NewApi()
-	err = api.Login(creds) // TODO: return actual token
+	token := loginModel.GetToken()
 
-	if err != nil {
-		return fmt.Errorf("Login failed: %w", err)
+	// Check if token is actually present (login succeeded)
+	if token == "" {
+		return fmt.Errorf("authentication cancelled or failed")
 	}
 
-	return a.SaveToken("token")
+	// Todo: replace with actual expiration date from actual token
+	expirationDate := time.Now().Add(7 * 24 * time.Hour) // 1 week
 
+	return a.SaveToken(token, expirationDate)
 }
 
-func (a *AuthService) SaveToken(token string) error {
-	tokenPath := a.configPath + "/refresh_token.json"
+func (a *AuthService) SaveToken(token string, expiresAt time.Time) error {
+	tokenPath := a.configPath + "/jwt_token.json"
 
-	rt := settings.RefreshToken{RefreshToken: token}
+	rt := settings.JwtToken{
+		Token:          token,
+		ExpirationDate: expiresAt,
+	}
 
 	data, err := json.Marshal(rt)
 
@@ -80,9 +96,12 @@ func (a *AuthService) GetToken() (string, error) {
 }
 
 func (a *AuthService) Logout() error {
-	tokenPath := a.configPath + "/refresh_token.json"
+	tokenPath := a.configPath + "/jwt_token.json"
 
-	rt := settings.RefreshToken{RefreshToken: ""}
+	rt := settings.JwtToken{
+		Token:          "",
+		ExpirationDate: time.Now(),
+	}
 
 	data, _ := json.Marshal(rt)
 

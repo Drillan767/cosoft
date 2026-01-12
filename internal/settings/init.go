@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 )
 
 type UserConfig struct {
@@ -12,8 +13,9 @@ type UserConfig struct {
 	PreferedDuration int      `json:"preferedDuration"`
 }
 
-type RefreshToken struct {
-	RefreshToken string `json:"refreshToken"`
+type JwtToken struct {
+	Token          string    `json:"token"`
+	ExpirationDate time.Time `json:"expires"`
 }
 
 func LoadConfiguration() error {
@@ -86,14 +88,15 @@ func ensureUserSettingsExist(path string) error {
 }
 
 func ensureRefreshTokenFileExists(path string) error {
-	refreshTokenPath := fmt.Sprintf("%s/refresh_token.json", path)
+	refreshTokenPath := fmt.Sprintf("%s/jwt_token.json", path)
 
 	if _, err := os.Stat(refreshTokenPath); err == nil {
 		return nil
 	} else if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Refresh token does not exist, creating...")
-		rt := RefreshToken{
-			RefreshToken: "",
+		fmt.Println("Token does not exist, creating...")
+		rt := JwtToken{
+			Token:          "",
+			ExpirationDate: time.Now(),
 		}
 
 		rtValue, err := json.Marshal(rt)
