@@ -235,3 +235,19 @@ type Reservation strut {
 }
 
 ```
+
+---
+
+# Authentication flow:
+
+1. User types `./cosoft` in terminal
+2. `root.go` is triggered through `main.go` and will try to display "landing" (root.go:28)
+3. However, a PreRunE hook will ensure that the user is logged in first (root.go:25)
+4. The hook consists of loading the json file and check that the timestamp next to the jwt token is valid (auth/service.go:39-44) and will return true if everything went smoothly
+5. If not valid / not existing, then display the login form (root:61)
+6. When / if the form is complete and valid (ui/login:145), display the spinner and start trying to log the user (ui/login:44)
+7. If auth fails, display the error, remove spinner and reset the form (ui/login:105)
+8. If auth succeeds (ui/login:99), remove the loader and stop the form.
+9. Back at `root.go`, we ensure that everything went ok, then try to get the user, then actually store the user once it's retrieve (root:77)
+10. Since the requirement no longer blocks the flow, `root.go` can now run the "landing" script (root:28)
+11. By the way, the `StartApp()` function is the one responsible for display data in the layout (ui/main:24)
