@@ -3,9 +3,7 @@ package auth
 import (
 	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/settings"
-	"cosoft-cli/internal/ui"
 	"encoding/json"
-	"fmt"
 	"os"
 	"time"
 )
@@ -47,32 +45,6 @@ func (a *AuthService) IsAuthenticated() bool {
 	}
 
 	return true
-}
-
-func (a *AuthService) RequiresAuth() error {
-	if a.IsAuthenticated() {
-		return nil
-	}
-
-	// Not authenticated, show form
-	ui := ui.NewUI()
-	loginModel, err := ui.LoginForm()
-
-	if err != nil {
-		return err
-	}
-
-	user := loginModel.GetUser()
-
-	// Check if token is actually present (login succeeded)
-	if user == nil || user.JwtToken == "" {
-		return fmt.Errorf("authentication cancelled or failed")
-	}
-
-	// Todo: replace with actual expiration date from actual token
-	expirationDate := time.Now().Add(7 * 24 * time.Hour) // 1 week
-
-	return a.SaveAuthData(user, expirationDate)
 }
 
 func (a *AuthService) SaveAuthData(user *api.UserResponse, expiresAt time.Time) error {

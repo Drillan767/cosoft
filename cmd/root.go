@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -50,5 +51,28 @@ func init() {
 
 func requireAuth(cmd *cobra.Command, args []string) error {
 	authService := auth.NewAuthService()
-	return authService.RequiresAuth()
+
+	if authService.IsAuthenticated() {
+		return nil
+	}
+
+	// Not authenticated, show form
+	uiInstance := ui.NewUI()
+	loginModel, err := uiInstance.LoginForm()
+
+	if err != nil {
+		return err
+	}
+
+	user := loginModel.GetUser()
+
+	// Check if token is actually present (login succeeded)
+	if user == nil || user.JwtToken == "" {
+		return fmt.Errorf("authentication cancelled or failed")
+	}
+
+	// Todo: replace with actual expiration date from actual token
+	expirationDate := time.Now().Add(7 * 24 * time.Hour) // 1 week
+
+	return authService.SaveAuthData(user, expirationDate)
 }
