@@ -174,195 +174,64 @@ All the options from the main menu will also be available as a CLI command to sk
 | `history`               | Previous reservations     |
 | `calendar [--date?]`    | Displays the calendar     |
 
-# Architecture and dependency injections
+# Slack bot
 
-## Option A: Context-based (Simple)
-```golang
-  // cmd/root.go
-var rootCmd = &cobra.Command{
-    Use: "cosoft",
-    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-    // Initialize dependencies ONCE
-        cfg := config.Load()
-        authMgr := auth.NewManager()
-        apiClient := api.NewClient(authMgr)
-        bookingSvc := booking.NewService(apiClient, cfg)
+HUB612 staff members have expressed their desire to be able to book a room through a Slack bot, which makes sense since the CLI format might be hard for them to use. This project might be able to concile everything, but some considerations need to made.
 
-        // Store in context
-        ctx := context.WithValue(cmd.Context(), "config", cfg)
-        ctx = context.WithValue(ctx, "bookingService", bookingSvc)
-        cmd.SetContext(ctx)
+## Migrating to SQLite
 
-        return nil
-    },
-}
-```
+JSON files stored locally should be replaced by a SQLite system. This will allow to store several data in an easier way, such as
+- The booking history
+- User's preferences and infos 
+- All rooms and their info (name, id, price, max users)
 
-```golang
-// cmd/quick.go
-var quickCmd = &cobra.Command{
-    Use: "quick",
-    RunE: func(cmd *cobra.Command, args []string) error {
-        // Retrieve from context
-        svc := cmd.Context().Value("bookingService").(*booking.Service)
+### SQLite file location
+It needs to be declared by each "side". Cobra needs to define it in the user's config directory, while Slack needs to declare it "locally", as we don't know where the binary will be hosted.
 
-        return svc.QuickBook(duration)
-    },
-}
-```
+## Updated workflow (For Cobra)
 
-## Option B: Global App State (Cleaner for CLIs)
+- User runs the command
+- Golang checks if the database file exists
+
+If it exists
+- Golang retrieves the "users" column's 1st row
+- If there's a user and a token marked as "still valid" in the database, golang considers that the user is logged in, and will redirect it to "main"
+- If any of the steps fails, display the login form
+
+If it doesn't exist
+- Create the db fle in the correct location, run the migrations, and display the login form
+
+## Structure
 
 ```golang
-  // cmd/root.go
-type App struct {
-    Config      *config.Config
-    AuthManager *auth.Manager
-    API         *api.Client
-    BookingSvc  *booking.Service
+type User struct {
+    Id string
+    FirstName string
+    LastName string
+    Email string
+    Jwt string
+    Credits int
+    ExpiresAt time.Time
+    SlackUserID *string
+    CreatedAt time.Time
 }
 
-var app *App
-
-var rootCmd = &cobra.Command{
-    Use: "cosoft",
-    PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-        // Initialize app dependencies
-        app = &App{
-            Config:      config.Load(),
-            AuthManager: auth.NewManager(),
-        }
-        app.API = api.NewClient(app.AuthManager)
-        app.BookingSvc = booking.NewService(app.API, app.Config)
-
-        return nil
-    },
-}
-```
-
-```golang
-// cmd/quick.go
-var quickCmd = &cobra.Command{
-    Use: "quick",
-    RunE: func(cmd *cobra.Command, args []string) error {
-        return app.BookingSvc.QuickBook(duration)
-    },
+type Room struct {
+    Id string
+    Name string
+    MaxUsers int
+    Price int
+    CreatedAt time.Time
 }
 
-func init() {
-    rootCmd.AddCommand(quickCmd)
+type Reservation strut {
+    Id uint
+    Date time.Time
+    Room Room
+    User User
+    Duration int
+    Cost int
+    CreatedAt time.Time
 }
-```
 
-Option C: Constructor Injection (Most testable)
-
-```golang
-// cmd/quick.go
-func NewQuickCmd(svc *booking.Service) *cobra.Command {
-    return &cobra.Command{
-        Use: "quick",
-        RunE: func(cmd *cobra.Command, args []string) error {
-            return svc.QuickBook(duration)
-        },
-    }
-}
-```
-
-```golang
-// cmd/root.go
-func Execute() {
-    cfg := config.Load()
-    authMgr := auth.NewManager()
-    apiClient := api.NewClient(authMgr)
-    bookingSvc := booking.NewService(apiClient, cfg)
-
-    rootCmd := &cobra.Command{Use: "cosoft"}
-    rootCmd.AddCommand(NewQuickCmd(bookingSvc))
-    rootCmd.AddCommand(NewBrowseCmd(bookingSvc))
-    // ... etc
-
-    rootCmd.Execute()
-}
-```
-
-  My Recommendation: Option B (Global App State)
-
-  Why?
-  - Simple and pragmatic for CLI apps
-  - No magic context values (type-safe)
-  - Easy to understand flow
-  - Cobra's PersistentPreRunE runs before ANY command
-  - Testable enough (you can mock app.BookingSvc in tests)
-
-  main.go stays minimal:
-  package main
-
-  import "cosoft-cli/cmd"
-
-  func main() {
-      cmd.Execute()
-  }
-
-  All initialization in cmd/root.go:
-
-```golang
-  package cmd
-
-  import (
-      "github.com/spf13/cobra"
-      // ... your internal packages
-  )
-
-  type App struct {
-      Config     *config.Config
-      API        *api.Client
-      BookingSvc *booking.Service
-  }
-
-  var app *App
-
-  var rootCmd = &cobra.Command{
-      Use:   "cosoft",
-      Short: "CoSoft meeting room booking CLI",
-      PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-          // Skip init for commands that don't need auth (like login)
-          if cmd.Name() == "login" {
-              return nil
-          }
-
-          // Initialize everything
-          cfg, err := config.Load()
-          if err != nil {
-              return err
-          }
-
-          authMgr, err := auth.NewManager()
-          if err != nil {
-              return err
-          }
-
-          apiClient := api.NewClient(authMgr)
-
-          app = &App{
-              Config:     cfg,
-              API:        apiClient,
-              BookingSvc: booking.NewService(apiClient, cfg),
-          }
-
-          return nil
-      },
-  }
-
-  func Execute() {
-      if err := rootCmd.Execute(); err != nil {
-          os.Exit(1)
-      }
-  }
-
-  func init() {
-      rootCmd.AddCommand(quickCmd)
-      rootCmd.AddCommand(browseCmd)
-      rootCmd.AddCommand(listCmd)
-      // ... etc
-  }
 ```
