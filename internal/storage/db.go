@@ -1,9 +1,12 @@
 package storage
 
 import (
+	"cosoft-cli/internal/api"
 	"database/sql"
-	"errors"
+	"fmt"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Store struct {
@@ -21,20 +24,13 @@ func NewStore(dbPath string) (*Store, error) {
 }
 
 func (s *Store) SetupDatabase(dbPath string) error {
-	db, err := sql.Open("sqlite3", dbPath)
-
-	if err != nil {
-		return err
-	}
-
-	defer db.Close()
 
 	query := `
 		CREATE TABLE IF NOT EXISTS users (
-			id VARCHAR(40) NOT NULL,
+			id VARCHAR(40) PRIMARY KEY NOT NULL,
 			first_name VARCHAR(50) NOT NULL,
 			last_name VARCHAR(50) NOT NULL,
-			email VARCHAR(50) NOT NULL,
+			email VARCHAR(50) UNIQUE NOT NULL,
 			credits SMALLINT NOT NULL DEFAULT 0,
 			jwt VARCHAR(50) NOT NULL,
 			expires_at DATE NOT NULL,
@@ -43,7 +39,7 @@ func (s *Store) SetupDatabase(dbPath string) error {
 		);
 
 		CREATE TABLE IF NOT EXISTS rooms (
-			id VARCHAR(40) NOT NULL,
+			id VARCHAR(40) PRIMARY KEY NOT NULL,
 			name VARCHAR(50) NOT NULL,
 			nb_users TINYINT NOT NULL DEFAULT 0,
 			price SMALLINT NOT NULL DEFAULT 0,
@@ -51,7 +47,7 @@ func (s *Store) SetupDatabase(dbPath string) error {
 		);
 	`
 
-	_, err = s.db.Exec(query)
+	_, err := s.db.Exec(query)
 
 	if err != nil {
 		return err
@@ -60,18 +56,44 @@ func (s *Store) SetupDatabase(dbPath string) error {
 	return nil
 }
 
-func (s *Store) GetUserByEmail(email string) (*User, error) {
+func (s *Store) HasActiveToken() (bool, error) {
 	// Check if JWT is still valid
-	query := `SELECT * FROM users WHERE email = ? AND expires_at > ?`
-	var user User
-	err := s.db.QueryRow(query, email, time.Now()).Scan(&user)
-	if err == sql.ErrNoRows {
-		return nil, errors.New("no valid session found")
+	query := `SELECT 1 FROM users WHERE expires_at > ?`
+
+	var result int
+	err := s.db.QueryRow(query, time.Now()).Scan(&result)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
 	}
-	return &user, err
+
+	return true, nil
 }
 
-func (s *Store) CreateUser(user *User) error {
+func (s *Store) CreateUser(user *api.UserResponse, expiresAt time.Time) error {
+	var nbUsers int
+
+	rows, err := s.db.Query("SELECT COUNT(*) FROM users;")
+
+	if err != nil {
+		return err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		if err := rows.Scan(&nbUsers); err != nil {
+			return err
+		}
+	}
+
+	if nbUsers > 0 {
+		return fmt.Errorf("A user already exists, aborting.")
+	}
+
 	query := `
         INSERT INTO users (id, email, first_name, last_name, credits, jwt, expires_at, slack_user_id, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -87,18 +109,55 @@ func (s *Store) CreateUser(user *User) error {
 			created_at = excluded.created_at
 		`
 
-	_, err := s.db.Exec(
+	_, err = s.db.Exec(
 		query,
 		user.Id,
 		user.Email,
 		user.FirstName,
 		user.LastName,
-		user.Credits,
-		user.Jwt,
-		user.ExpiresAt,
-		user.SlackUserID,
+		user.Credits*100,
+		user.JwtToken,
+		expiresAt,
+		nil,
 		time.Now(),
 	)
+
+	return err
+}
+
+func (s *Store) GetUserData() (*User, error) {
+
+	var user User
+
+	query := `
+		SELECT id, first_name, last_name, email, jwt, credits, expires_at, slack_user_id, created_at FROM users LIMIT 1;
+	`
+
+	err := s.db.QueryRow(query).Scan(
+		&user.Id,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Jwt,
+		&user.Credits,
+		&user.ExpiresAt,
+		&user.SlackUserID,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (s *Store) LogoutUser() error {
+	query := `
+		UPDATE TABLE users SET jwt = "", expires_at = ? WHERE id = (SELECT id FROM users LIMIT 1)
+	`
+
+	_, err := s.db.Exec(query, time.Now())
 
 	return err
 }

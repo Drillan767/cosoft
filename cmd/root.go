@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		err := settings.LoadConfiguration()
+		err := settings.EnsureDatabaseExists()
 
 		if err != nil {
 			log.Fatal(err)
@@ -50,7 +50,11 @@ func init() {
 }
 
 func requireAuth(cmd *cobra.Command, args []string) error {
-	authService := auth.NewAuthService()
+	authService, err := auth.NewAuthService()
+
+	if err != nil {
+		return err
+	}
 
 	if authService.IsAuthenticated() {
 		return nil

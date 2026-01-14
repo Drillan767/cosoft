@@ -23,7 +23,12 @@ var loginCmd = &cobra.Command{
 			return
 		}
 
-		authService := auth.NewAuthService()
+		authService, err := auth.NewAuthService()
+
+		if err != nil {
+			cmd.PrintErrf("Error: %v\n", err)
+			return
+		}
 
 		// Calculate expiration (1 week from now)
 		expirationDate := time.Now().Add(7 * 24 * time.Hour)
