@@ -14,7 +14,7 @@ import (
 type LoginModel struct {
 	form        *huh.Form
 	credentials *api.LoginPayload
-	token       string
+	user        *api.UserResponse
 	spinner     spinner.Model
 	err         error
 	quitting    bool
@@ -22,7 +22,7 @@ type LoginModel struct {
 }
 
 type loginSuccessMsg struct {
-	token string
+	user *api.UserResponse
 }
 
 type loginErrorMsg struct {
@@ -45,13 +45,13 @@ func (m *LoginModel) performLogin() tea.Cmd {
 	return func() tea.Msg {
 		apiClient := api.NewApi()
 
-		token, err := apiClient.Login(m.credentials)
+		user, err := apiClient.Login(m.credentials)
 
 		if err != nil {
 			return loginErrorMsg{err: err}
 		}
 
-		return loginSuccessMsg{token: token}
+		return loginSuccessMsg{user: user}
 	}
 }
 
@@ -97,7 +97,7 @@ func (m *LoginModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 	case loginSuccessMsg:
-		m.token = msg.token // Store the token!
+		m.user = msg.user // Store the user!
 		m.loading = false
 		m.quitting = true
 		return m, tea.Quit
@@ -174,8 +174,8 @@ func (m *LoginModel) GetCredentials() *api.LoginPayload {
 	return m.credentials
 }
 
-func (m *LoginModel) GetToken() string {
-	return m.token
+func (m *LoginModel) GetUser() *api.UserResponse {
+	return m.user
 }
 
 // LoginFormWithLayout creates a login form wrapped in a layout

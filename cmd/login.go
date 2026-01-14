@@ -28,7 +28,7 @@ var loginCmd = &cobra.Command{
 		// Calculate expiration (1 week from now)
 		expirationDate := time.Now().Add(7 * 24 * time.Hour)
 
-		if err := authService.SaveToken(loginModel.GetToken(), expirationDate); err != nil {
+		if err := authService.SaveAuthData(loginModel.GetUser(), expirationDate); err != nil {
 			cmd.PrintErrf("Failed to save token: %v\n", err)
 			return
 		}

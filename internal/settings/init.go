@@ -13,15 +13,24 @@ type UserConfig struct {
 	PreferedDuration int      `json:"preferedDuration"`
 }
 
-type JwtToken struct {
+type AuthData struct {
 	Token          string    `json:"token"`
 	ExpirationDate time.Time `json:"expires"`
+	FirstName      string    `json:"firstName"`
+	LastName       string    `json:"lastName"`
+	Email          string    `json:"email"`
+	Credits        float64   `json:"credits"`
 }
 
 func LoadConfiguration() error {
-	path := fmt.Sprintf("%s/.cosoft", os.Getenv("HOME"))
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+	// Use "cosoft" as the application directory name
+	path := fmt.Sprintf("%s/cosoft", configDir)
 
-	err := createConfiguration(path)
+	err = createConfiguration(path)
 
 	if err != nil {
 		return err
@@ -33,7 +42,7 @@ func LoadConfiguration() error {
 		return err
 	}
 
-	err = ensureRefreshTokenFileExists(path)
+	err = ensureAuthDataFileExists(path)
 
 	if err != nil {
 		return err
@@ -46,7 +55,7 @@ func createConfiguration(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		fmt.Println("Configuration directory does not exist, creating...")
 
-		err = os.Mkdir(path, 0700)
+		err = os.MkdirAll(path, 0700)
 
 		if err != nil {
 			return err
@@ -87,25 +96,25 @@ func ensureUserSettingsExist(path string) error {
 	}
 }
 
-func ensureRefreshTokenFileExists(path string) error {
-	refreshTokenPath := fmt.Sprintf("%s/jwt_token.json", path)
+func ensureAuthDataFileExists(path string) error {
+	authDataPath := fmt.Sprintf("%s/auth_data.json", path)
 
-	if _, err := os.Stat(refreshTokenPath); err == nil {
+	if _, err := os.Stat(authDataPath); err == nil {
 		return nil
 	} else if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Token does not exist, creating...")
-		rt := JwtToken{
+		fmt.Println("Auth data does not exist, creating...")
+		ad := AuthData{
 			Token:          "",
 			ExpirationDate: time.Now(),
 		}
 
-		rtValue, err := json.Marshal(rt)
+		adValue, err := json.Marshal(ad)
 
 		if err != nil {
 			return err
 		}
 
-		err = os.WriteFile(refreshTokenPath, rtValue, 0640)
+		err = os.WriteFile(authDataPath, adValue, 0640)
 
 		if err != nil {
 			return err

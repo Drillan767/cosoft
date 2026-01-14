@@ -9,8 +9,12 @@ import (
 )
 
 type UserResponse struct {
-	JwtToken string `json:"JwtToken"`
-	Id       string `json:"Id"`
+	JwtToken  string  `json:"JwtToken"`
+	Id        string  `json:"Id"`
+	FirstName string  `json:"FirstName"`
+	LastName  string  `json:"LastName"`
+	Email     string  `json:"Email"`
+	Credits   float64 `json:"Credits"`
 }
 
 type AuthPayload struct {
@@ -19,7 +23,7 @@ type AuthPayload struct {
 	User    *UserResponse `json:"User"`
 }
 
-func (a *Api) Login(payload *LoginPayload) (string, error) {
+func (a *Api) Login(payload *LoginPayload) (*UserResponse, error) {
 	values := map[string]string{
 		"email":    payload.Email,
 		"password": payload.Password,
@@ -46,12 +50,12 @@ func (a *Api) Login(payload *LoginPayload) (string, error) {
 	response := AuthPayload{}
 
 	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if !response.IsAuth || response.User == nil {
-		return "", fmt.Errorf("Wrong username / password")
+		return nil, fmt.Errorf("Wrong username / password")
 	}
 
-	return response.User.JwtToken, nil
+	return response.User, nil
 }

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/settings"
 	"cosoft-cli/internal/ui"
 	"encoding/json"
@@ -14,13 +15,14 @@ type AuthService struct {
 }
 
 func NewAuthService() *AuthService {
+	configDir, _ := os.UserConfigDir()
 	return &AuthService{
-		configPath: os.Getenv("HOME") + "/.cosoft",
+		configPath: configDir + "/cosoft",
 	}
 }
 
 func (a *AuthService) IsAuthenticated() bool {
-	tokenPath := a.configPath + "/jwt_token.json"
+	tokenPath := a.configPath + "/auth_data.json"
 
 	data, err := os.ReadFile(tokenPath)
 
@@ -28,19 +30,19 @@ func (a *AuthService) IsAuthenticated() bool {
 		return false
 	}
 
-	var rt settings.JwtToken
+	var ad settings.AuthData
 
-	if err := json.Unmarshal(data, &rt); err != nil {
+	if err := json.Unmarshal(data, &ad); err != nil {
 		return false
 	}
 
 	// Check token exists
-	if rt.Token == "" {
+	if ad.Token == "" {
 		return false
 	}
 
 	// Check if token is not expired
-	if time.Now().After(rt.ExpirationDate) {
+	if time.Now().After(ad.ExpirationDate) {
 		return false
 	}
 
@@ -60,28 +62,32 @@ func (a *AuthService) RequiresAuth() error {
 		return err
 	}
 
-	token := loginModel.GetToken()
+	user := loginModel.GetUser()
 
 	// Check if token is actually present (login succeeded)
-	if token == "" {
+	if user == nil || user.JwtToken == "" {
 		return fmt.Errorf("authentication cancelled or failed")
 	}
 
 	// Todo: replace with actual expiration date from actual token
 	expirationDate := time.Now().Add(7 * 24 * time.Hour) // 1 week
 
-	return a.SaveToken(token, expirationDate)
+	return a.SaveAuthData(user, expirationDate)
 }
 
-func (a *AuthService) SaveToken(token string, expiresAt time.Time) error {
-	tokenPath := a.configPath + "/jwt_token.json"
+func (a *AuthService) SaveAuthData(user *api.UserResponse, expiresAt time.Time) error {
+	tokenPath := a.configPath + "/auth_data.json"
 
-	rt := settings.JwtToken{
-		Token:          token,
+	ad := settings.AuthData{
+		Token:          user.JwtToken,
 		ExpirationDate: expiresAt,
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		Email:          user.Email,
+		Credits:        user.Credits,
 	}
 
-	data, err := json.Marshal(rt)
+	data, err := json.Marshal(ad)
 
 	if err != nil {
 		return err
@@ -96,14 +102,30 @@ func (a *AuthService) GetToken() (string, error) {
 }
 
 func (a *AuthService) Logout() error {
-	tokenPath := a.configPath + "/jwt_token.json"
+	tokenPath := a.configPath + "/auth_data.json"
 
-	rt := settings.JwtToken{
+	ad := settings.AuthData{
 		Token:          "",
 		ExpirationDate: time.Now(),
 	}
 
-	data, _ := json.Marshal(rt)
+	data, _ := json.Marshal(ad)
 
 	return os.WriteFile(tokenPath, data, 0600)
+}
+
+func (a *AuthService) GetAuthData() (*settings.AuthData, error) {
+	tokenPath := a.configPath + "/auth_data.json"
+
+	data, err := os.ReadFile(tokenPath)
+	if err != nil {
+		return nil, err
+	}
+
+	var ad settings.AuthData
+	if err := json.Unmarshal(data, &ad); err != nil {
+		return nil, err
+	}
+
+	return &ad, nil
 }
