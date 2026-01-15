@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -75,8 +74,5 @@ func requireAuth(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("authentication cancelled or failed")
 	}
 
-	// Todo: replace with actual expiration date from actual token
-	expirationDate := time.Now().Add(7 * 24 * time.Hour) // 1 week
-
-	return authService.SaveAuthData(user, expirationDate)
+	return authService.SaveAuthData(user)
 }

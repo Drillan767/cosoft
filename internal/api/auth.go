@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
 
 type UserResponse struct {
-	JwtToken  string  `json:"JwtToken"`
-	Id        string  `json:"Id"`
-	FirstName string  `json:"FirstName"`
-	LastName  string  `json:"LastName"`
-	Email     string  `json:"Email"`
-	Credits   float64 `json:"Credits"`
+	JwtToken     string  `json:"JwtToken"`
+	RefreshToken string  `json:"-"`
+	Id           string  `json:"Id"`
+	FirstName    string  `json:"FirstName"`
+	LastName     string  `json:"LastName"`
+	Email        string  `json:"Email"`
+	Credits      float64 `json:"Credits"`
 }
 
 type AuthPayload struct {
@@ -57,5 +59,26 @@ func (a *Api) Login(payload *LoginPayload) (*UserResponse, error) {
 		return nil, fmt.Errorf("Wrong username / password")
 	}
 
+	// Extract refresh token from Set-Cookie header
+	cookies := resp.Header.Values("Set-Cookie")
+	refreshToken := extractRefreshToken(cookies)
+	response.User.RefreshToken = refreshToken
+
 	return response.User, nil
+}
+
+// extractRefreshToken extracts w_auth_refresh from Set-Cookie headers
+func extractRefreshToken(cookies []string) string {
+	for _, cookie := range cookies {
+		if strings.Contains(cookie, "w_auth_refresh=") {
+			parts := strings.Split(cookie, ";")
+			for _, part := range parts {
+				part = strings.TrimSpace(part)
+				if strings.HasPrefix(part, "w_auth_refresh=") {
+					return strings.TrimPrefix(part, "w_auth_refresh=")
+				}
+			}
+		}
+	}
+	return ""
 }

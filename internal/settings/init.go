@@ -26,18 +26,16 @@ func EnsureDatabaseExists() error {
 		return err
 	}
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		store, err := storage.NewStore(path)
+	store, err := storage.NewStore(path)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
-		err = store.SetupDatabase(path)
+	err = store.SetupDatabase(path)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	return nil

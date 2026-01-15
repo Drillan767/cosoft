@@ -5,7 +5,6 @@ import (
 	"cosoft-cli/internal/storage"
 	"fmt"
 	"os"
-	"time"
 )
 
 type AuthService struct {
@@ -36,8 +35,8 @@ func (a *AuthService) IsAuthenticated() bool {
 	return hasActiveToken
 }
 
-func (a *AuthService) SaveAuthData(user *api.UserResponse, expiresAt time.Time) error {
-	return a.store.CreateUser(user, expiresAt)
+func (a *AuthService) SaveAuthData(user *api.UserResponse) error {
+	return a.store.CreateUser(user, user.JwtToken, user.RefreshToken)
 }
 
 func (a *AuthService) Logout() error {

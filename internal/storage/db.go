@@ -32,8 +32,8 @@ func (s *Store) SetupDatabase(dbPath string) error {
 			last_name VARCHAR(50) NOT NULL,
 			email VARCHAR(50) UNIQUE NOT NULL,
 			credits SMALLINT NOT NULL DEFAULT 0,
-			jwt VARCHAR(50) NOT NULL,
-			expires_at DATE NOT NULL,
+			w_auth TEXT NOT NULL,
+			w_auth_refresh TEXT NOT NULL,
 			slack_user_id VARCHAR(50),
 			created_at DATE NOT NULL
 		);
@@ -57,11 +57,11 @@ func (s *Store) SetupDatabase(dbPath string) error {
 }
 
 func (s *Store) HasActiveToken() (bool, error) {
-	// Check if JWT is still valid
-	query := `SELECT 1 FROM users WHERE expires_at > ?`
+	// Check if user exists (cookies don't expire on our side, server handles it)
+	query := `SELECT 1 FROM users LIMIT 1`
 
 	var result int
-	err := s.db.QueryRow(query, time.Now()).Scan(&result)
+	err := s.db.QueryRow(query).Scan(&result)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -73,7 +73,7 @@ func (s *Store) HasActiveToken() (bool, error) {
 	return true, nil
 }
 
-func (s *Store) CreateUser(user *api.UserResponse, expiresAt time.Time) error {
+func (s *Store) CreateUser(user *api.UserResponse, wAuth, wAuthRefresh string) error {
 	var nbUsers int
 
 	rows, err := s.db.Query("SELECT COUNT(*) FROM users;")
@@ -95,7 +95,7 @@ func (s *Store) CreateUser(user *api.UserResponse, expiresAt time.Time) error {
 	}
 
 	query := `
-        INSERT INTO users (id, email, first_name, last_name, credits, jwt, expires_at, slack_user_id, created_at)
+        INSERT INTO users (id, email, first_name, last_name, credits, w_auth, w_auth_refresh, slack_user_id, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (email) DO UPDATE SET
 			id = excluded.id,
@@ -103,8 +103,8 @@ func (s *Store) CreateUser(user *api.UserResponse, expiresAt time.Time) error {
 			first_name = excluded.first_name,
 			last_name = excluded.last_name,
 			credits = excluded.credits,
-			jwt = excluded.jwt,
-			expires_at = excluded.expires_at,
+			w_auth = excluded.w_auth,
+			w_auth_refresh = excluded.w_auth_refresh,
 			slack_user_id = excluded.slack_user_id,
 			created_at = excluded.created_at
 		`
@@ -116,8 +116,8 @@ func (s *Store) CreateUser(user *api.UserResponse, expiresAt time.Time) error {
 		user.FirstName,
 		user.LastName,
 		user.Credits*100,
-		user.JwtToken,
-		expiresAt,
+		wAuth,
+		wAuthRefresh,
 		nil,
 		time.Now(),
 	)
@@ -130,7 +130,7 @@ func (s *Store) GetUserData() (*User, error) {
 	var user User
 
 	query := `
-		SELECT id, first_name, last_name, email, jwt, credits, expires_at, slack_user_id, created_at FROM users LIMIT 1;
+		SELECT id, first_name, last_name, email, w_auth, w_auth_refresh, credits, slack_user_id, created_at FROM users LIMIT 1;
 	`
 
 	err := s.db.QueryRow(query).Scan(
@@ -138,9 +138,9 @@ func (s *Store) GetUserData() (*User, error) {
 		&user.FirstName,
 		&user.LastName,
 		&user.Email,
-		&user.Jwt,
+		&user.WAuth,
+		&user.WAuthRefresh,
 		&user.Credits,
-		&user.ExpiresAt,
 		&user.SlackUserID,
 		&user.CreatedAt,
 	)
@@ -153,11 +153,9 @@ func (s *Store) GetUserData() (*User, error) {
 }
 
 func (s *Store) LogoutUser() error {
-	query := `
-		UPDATE TABLE users SET jwt = "", expires_at = ? WHERE id = (SELECT id FROM users LIMIT 1)
-	`
+	query := `DELETE FROM users`
 
-	_, err := s.db.Exec(query, time.Now())
+	_, err := s.db.Exec(query)
 
 	return err
 }

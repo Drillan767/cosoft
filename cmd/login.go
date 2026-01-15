@@ -6,7 +6,6 @@ package cmd
 import (
 	"cosoft-cli/internal/auth"
 	"cosoft-cli/internal/ui"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -30,10 +29,7 @@ var loginCmd = &cobra.Command{
 			return
 		}
 
-		// Calculate expiration (1 week from now)
-		expirationDate := time.Now().Add(7 * 24 * time.Hour)
-
-		if err := authService.SaveAuthData(loginModel.GetUser(), expirationDate); err != nil {
+		if err := authService.SaveAuthData(loginModel.GetUser()); err != nil {
 			cmd.PrintErrf("Failed to save token: %v\n", err)
 			return
 		}
