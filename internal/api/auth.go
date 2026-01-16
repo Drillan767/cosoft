@@ -38,7 +38,7 @@ func (a *Api) Login(payload *LoginPayload) (*UserResponse, error) {
 	}
 
 	resp, err := http.Post(
-		baseUrl+"/v2/api/api/users/login",
+		apiUrl+"/users/login",
 		"application/json",
 		bytes.NewBuffer(jsonValues),
 	)
@@ -81,4 +81,38 @@ func extractRefreshToken(cookies []string) string {
 		}
 	}
 	return ""
+}
+
+func (a *Api) GetCredits(wAuth, wAuthRefresh string) (float64, error) {
+	req, err := http.NewRequest(
+		"GET",
+		apiUrl+"/users/auth",
+		nil,
+	)
+
+	if err != nil {
+		return 0, err
+	}
+
+	client := &http.Client{}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return 0, err
+	}
+
+	defer resp.Body.Close()
+
+	response := AuthPayload{}
+
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return 0, err
+	}
+
+	return response.User.Credits, nil
+
 }

@@ -44,11 +44,9 @@ func (a *AuthService) Logout() error {
 }
 
 func (a *AuthService) GetAuthData() (*storage.User, error) {
-	user, err := a.store.GetUserData()
+	return a.store.GetUserData()
+}
 
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
+func (a *AuthService) UpdateCredits() (*float64, error) {
+	return a.store.UpdateCredits()
 }

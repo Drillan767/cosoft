@@ -24,6 +24,10 @@ type futureBookingMsg struct {
 	err   error
 }
 
+type updatedCreditsMsg struct {
+	credits float64
+}
+
 func NewLandingModel() *LandingModel {
 	selection := &models.Selection{}
 
@@ -70,6 +74,7 @@ func (m *LandingModel) Init() tea.Cmd {
 		m.form.Init(),
 		m.spinner.Tick,
 		m.fetchFutureBookings(),
+		m.updateCredits(),
 	)
 }
 
@@ -88,10 +93,28 @@ func (m *LandingModel) fetchFutureBookings() tea.Cmd {
 		}
 
 		apiClient := api.NewApi()
-
 		total, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
 
 		return futureBookingMsg{total: total, err: err}
+	}
+}
+
+func (m *LandingModel) updateCredits() tea.Cmd {
+	return func() tea.Msg {
+		authService, err := auth.NewAuthService()
+
+		if err != nil {
+			return nil
+		}
+
+		credits, err := authService.UpdateCredits()
+
+		// Either failed, or there was nothing to update
+		if err != nil || credits == nil {
+			return nil
+		}
+
+		return updatedCreditsMsg{credits: *credits}
 	}
 }
 
@@ -107,6 +130,12 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		m.buildForm() // Rebuild form with updated data
 		return m, m.form.Init()
+
+	case updatedCreditsMsg:
+		credits := fmt.Sprintf("Credits: %.02f", msg.credits)
+		return m, func() tea.Msg {
+			return UpdateHeaderMsg{Credits: &credits}
+		}
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd

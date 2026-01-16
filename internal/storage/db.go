@@ -160,7 +160,50 @@ func (s *Store) LogoutUser() error {
 	return err
 }
 
-// Update credits
+func (s *Store) UpdateCredits() (*float64, error) {
+	type UserCookies struct {
+		Id      string  `db:"id"`
+		Credits float64 `db:"credits"`
+		Auth    string  `db:"w_auth"`
+		Refresh string  `db:"w_auth_refresh"`
+	}
+
+	uc := UserCookies{}
+
+	query := `
+		SELECT id, credits, w_auth, w_auth_refresh FROM users LIMIT 1
+	`
+
+	err := s.db.QueryRow(query).Scan(
+		&uc.Id,
+		&uc.Credits,
+		&uc.Auth,
+		&uc.Refresh,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	clientApi := api.NewApi()
+	newCredits, err := clientApi.GetCredits(uc.Auth, uc.Refresh)
+
+	if err != nil {
+		return nil, err
+	}
+
+	savedCredits := float64(uc.Credits) / float64(100)
+
+	if savedCredits == newCredits {
+		return nil, nil
+	}
+
+	query = `UPDATE users SET credits = ? WHERE id = ?`
+
+	_, err = s.db.Exec(query, newCredits*100, uc.Id)
+
+	return &newCredits, nil
+}
 
 // List reservations (parameter: paste / future)
 // Store reservation

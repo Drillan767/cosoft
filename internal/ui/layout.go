@@ -15,6 +15,13 @@ type HeaderParts struct {
 	Credits string
 }
 
+// UpdateHeaderMsg is sent by child models to update header parts
+type UpdateHeaderMsg struct {
+	Center  *string // nil means don't update
+	Right   *string
+	Credits *string
+}
+
 // LayoutConfig holds configuration for the layout appearance
 type LayoutConfig struct {
 	Header      HeaderParts
@@ -126,6 +133,19 @@ func (l *Layout) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		l.width = msg.Width
 		l.height = msg.Height
 		l.updateStyles()
+
+	case UpdateHeaderMsg:
+		// Handle header updates from child models
+		if msg.Center != nil {
+			l.config.Header.Center = *msg.Center
+		}
+		if msg.Right != nil {
+			l.config.Header.Right = *msg.Right
+		}
+		if msg.Credits != nil {
+			l.config.Header.Credits = *msg.Credits
+		}
+		return l, nil
 	}
 
 	// Update the wrapped content
