@@ -7,9 +7,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// HeaderParts holds the different sections of the header
+type HeaderParts struct {
+	Left    string
+	Center  string
+	Right   string
+	Credits string
+}
+
 // LayoutConfig holds configuration for the layout appearance
 type LayoutConfig struct {
-	Header      string
+	Header      HeaderParts
 	Footer      string
 	ShowHeader  bool
 	ShowFooter  bool
@@ -55,21 +63,20 @@ func NewLayout(content tea.Model, config LayoutConfig) *Layout {
 }
 
 // NewLayoutWithDefaults creates a layout with default configuration
-func NewLayoutWithDefaults(content tea.Model, header, footer string) *Layout {
+func NewLayoutWithDefaults(content tea.Model, headerLeft, footer string) *Layout {
 	config := DefaultLayoutConfig()
-	config.Header = header
+	config.Header.Left = headerLeft
 	config.Footer = footer
 	return NewLayout(content, config)
 }
 
 func (l *Layout) updateStyles() {
-	// Header style
+	// Header style - no Width set, we control width via content string length
 	l.headerStyle = lipgloss.NewStyle().
 		Bold(true).
 		Foreground(lipgloss.Color("#FAFAFA")).
 		Background(lipgloss.Color(l.config.HeaderColor)).
-		Padding(0, 1).
-		Width(l.width)
+		Padding(0, 1)
 
 	// Footer style
 	l.footerStyle = lipgloss.NewStyle().
@@ -79,7 +86,7 @@ func (l *Layout) updateStyles() {
 
 	contentWidth := l.width
 	if l.config.ShowBorder && contentWidth > 0 {
-		contentWidth = contentWidth - 6
+		contentWidth = contentWidth - 2 // Account for border (1 left + 1 right)
 		if contentWidth < 0 {
 			contentWidth = 0
 		}
@@ -89,7 +96,6 @@ func (l *Layout) updateStyles() {
 			Padding(1, 2).
 			Width(contentWidth)
 	} else if contentWidth > 0 {
-		contentWidth = contentWidth - 4 // 4 for padding (2 left + 2 right)
 		if contentWidth < 0 {
 			contentWidth = 0
 		}
@@ -139,8 +145,8 @@ func (l *Layout) View() string {
 	var sections []string
 
 	// Add header if enabled
-	if l.config.ShowHeader && l.config.Header != "" {
-		header := l.headerStyle.Render(l.config.Header)
+	if l.config.ShowHeader && l.hasHeaderContent() {
+		header := l.renderHeader()
 		sections = append(sections, header)
 	}
 
@@ -157,22 +163,103 @@ func (l *Layout) View() string {
 	return lipgloss.JoinVertical(lipgloss.Left, sections...)
 }
 
-// SetHeader updates the header text
-func (l *Layout) SetHeader(header string) {
-	l.config.Header = header
+// hasHeaderContent checks if any header part has content
+func (l *Layout) hasHeaderContent() bool {
+	h := l.config.Header
+	return h.Left != "" || h.Center != "" || h.Right != "" || h.Credits != ""
 }
 
-// SetFooter updates the footer text
+// renderHeader renders the multi-part header with proper alignment
+func (l *Layout) renderHeader() string {
+	h := l.config.Header
+	width := l.width
+	if width <= 0 {
+		width = 80 // fallback width
+	}
+
+	// Match the container width
+	innerWidth := width - 2
+	if innerWidth < 10 {
+		innerWidth = 10
+	}
+
+	// Build left part
+	leftPart := h.Left
+
+	// Build center part
+	centerPart := h.Center
+
+	// Build right part (user info + credits)
+	var rightParts []string
+	if h.Right != "" {
+		rightParts = append(rightParts, h.Right)
+	}
+	if h.Credits != "" {
+		rightParts = append(rightParts, h.Credits)
+	}
+	rightPart := strings.Join(rightParts, " | ")
+
+	// Calculate spacing
+	leftLen := len(leftPart)
+	centerLen := len(centerPart)
+	rightLen := len(rightPart)
+
+	// Calculate available space for gaps
+	totalContentLen := leftLen + centerLen + rightLen
+	availableSpace := innerWidth - totalContentLen
+
+	if availableSpace < 2 {
+		// Not enough space, just concatenate with minimal spacing
+		return l.headerStyle.Render(leftPart + " " + centerPart + " " + rightPart)
+	}
+
+	var leftGap, rightGap int
+
+	if centerLen > 0 {
+		// With center content: distribute space on both sides
+		leftGap = availableSpace / 2
+		rightGap = availableSpace - leftGap
+	} else {
+		// No center: all space between left and right
+		leftGap = availableSpace
+		rightGap = 0
+	}
+
+	// Build the header line
+	var headerLine string
+	if centerLen > 0 {
+		headerLine = leftPart + strings.Repeat(" ", leftGap) + centerPart + strings.Repeat(" ", rightGap) + rightPart
+	} else {
+		headerLine = leftPart + strings.Repeat(" ", leftGap) + rightPart
+	}
+
+	return l.headerStyle.Render(headerLine)
+}
+
+func (l *Layout) SetHeaderLeft(text string) {
+	l.config.Header.Left = text
+}
+
+func (l *Layout) SetHeaderCenter(location string) {
+	l.config.Header.Center = location
+}
+
+func (l *Layout) SetHeaderRight(userInfo string) {
+	l.config.Header.Right = userInfo
+}
+
+func (l *Layout) SetHeaderCredits(credits string) {
+	l.config.Header.Credits = credits
+}
+
 func (l *Layout) SetFooter(footer string) {
 	l.config.Footer = footer
 }
 
-// GetContent returns the wrapped content model
 func (l *Layout) GetContent() tea.Model {
 	return l.content
 }
 
-// Helper function to create centered text
 func CenterText(text string, width int) string {
 	if width <= 0 {
 		return text

@@ -197,7 +197,8 @@ func (ui *UI) ExampleTableWithLayout() (table.Row, error) {
 
 	// Wrap in layout with custom config
 	config := DefaultLayoutConfig()
-	config.Header = "COSOFT CLI - Server Status"
+	config.Header.Left = "COSOFT CLI"
+	config.Header.Center = "Server Status"
 	config.Footer = "Use ↑/↓ to navigate • Enter to select • q to quit"
 	config.BorderColor = "#00FF00"
 	config.HeaderColor = "#0066CC"
@@ -305,7 +306,8 @@ func (ui *UI) ExampleDashboard() error {
 	dashboardModel := NewSimpleTextModel(content)
 
 	config := DefaultLayoutConfig()
-	config.Header = "COSOFT CLI - Dashboard"
+	config.Header.Left = "COSOFT CLI"
+	config.Header.Center = "Dashboard"
 	config.Footer = "Press q or Ctrl+C to exit"
 	config.BorderColor = "#FFD700"
 

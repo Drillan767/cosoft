@@ -16,7 +16,10 @@ func NewUI() *UI {
 func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 	appModel := NewAppModel(startPage, allowBackNav)
 
-	header := "COSOFT CLI"
+	config := DefaultLayoutConfig()
+	config.Header.Left = "COSOFT CLI"
+	config.Header.Center = startPage // Initial location
+	config.Footer = "Press Ctrl + C to cancel"
 
 	// Try to get user info
 	authService, err := auth.NewAuthService()
@@ -26,15 +29,12 @@ func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 	}
 
 	if user, err := authService.GetAuthData(); err == nil {
-		header = fmt.Sprintf("COSOFT CLI | %s %s (%s) | Credits: %d",
-			user.FirstName, user.LastName, user.Email, user.Credits/100)
+		credits := float32(user.Credits) / float32(100)
+		config.Header.Right = fmt.Sprintf("%s %s (%s)", user.FirstName, user.LastName, user.Email)
+		config.Header.Credits = fmt.Sprintf("Credits: %.02f", credits)
 	}
 
-	layout := NewLayoutWithDefaults(
-		appModel,
-		header,
-		"Press Ctrl + C to cancel",
-	)
+	layout := NewLayout(appModel, config)
 
 	p := tea.NewProgram(layout)
 
