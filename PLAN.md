@@ -178,28 +178,9 @@ All the options from the main menu will also be available as a CLI command to sk
 
 HUB612 staff members have expressed their desire to be able to book a room through a Slack bot, which makes sense since the CLI format might be hard for them to use. This project might be able to concile everything, but some considerations need to made.
 
-## Migrating to SQLite
-
-JSON files stored locally should be replaced by a SQLite system. This will allow to store several data in an easier way, such as
-- The booking history
-- User's preferences and infos 
-- All rooms and their info (name, id, price, max users)
-
-### SQLite file location
-It needs to be declared by each "side". Cobra needs to define it in the user's config directory, while Slack needs to declare it "locally", as we don't know where the binary will be hosted.
-
-## Updated workflow (For Cobra)
-
-- User runs the command
-- Golang checks if the database file exists
-
-If it exists
-- Golang retrieves the "users" column's 1st row
-- If there's a user and a token marked as "still valid" in the database, golang considers that the user is logged in, and will redirect it to "main"
-- If any of the steps fails, display the login form
-
-If it doesn't exist
-- Create the db fle in the correct location, run the migrations, and display the login form
+## Note
+- The element ensuring something's available needs to be its own function, as it needs to be reused in the several instances
+- Rooms can be booked retroactively up to 30mn prior to current hour
 
 ## Structure
 

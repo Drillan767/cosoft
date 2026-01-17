@@ -7,6 +7,7 @@ type LoginPayload struct {
 
 type QuickBookPayload struct {
 	Duration int
+	NbPeople int
 }
 
 type BrowsePayload struct {
