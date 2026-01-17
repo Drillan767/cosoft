@@ -1,1 +1,3 @@
 cosoft*
+*.log
+__debug*
