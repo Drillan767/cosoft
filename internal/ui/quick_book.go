@@ -113,18 +113,19 @@ func getClosestQuarterHour() time.Time {
 	currentHour := now.Hour()
 	currentMinutes := now.Minute()
 
-	if currentMinutes > 50 {
+	if currentMinutes > 52 {
 		currentHour++
 	}
 
-	closesMinutes := math.Round(float64(currentMinutes) / float64(15) * float64(15))
+	m1 := math.Round(float64(currentMinutes)/float64(15)) * 15
+	m2 := int(m1) % 60
 
 	return time.Date(
 		now.Year(),
 		now.Month(),
 		now.Day(),
 		currentHour,
-		int(closesMinutes),
+		m2,
 		0,
 		0,
 		now.Location(),
