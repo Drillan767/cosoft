@@ -20,6 +20,14 @@ type QuickBookModel struct {
 	payload        *api.QuickBookPayload
 }
 
+type bookingProcessStart struct{}
+type searchDone struct {
+	roomFound bool
+}
+
+type bookingStart struct{}
+type bookingEnd struct{}
+
 func NewQuickBookModel() *QuickBookModel {
 	selection := &api.QuickBookPayload{}
 

@@ -12,3 +12,10 @@ type GlobalState struct {
 type Selection struct {
 	Choice string
 }
+
+type Room struct {
+	Id      string
+	Name    string
+	NbUsers int
+	Price   float64
+}
