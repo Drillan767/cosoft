@@ -4,7 +4,7 @@ Copyright © 2026 NAME HERE <jlevarato@proton.me>
 package cmd
 
 import (
-	"cosoft-cli/internal/auth"
+	"cosoft-cli/internal/services"
 	"cosoft-cli/internal/ui"
 
 	"github.com/spf13/cobra"
@@ -22,7 +22,7 @@ var loginCmd = &cobra.Command{
 			return
 		}
 
-		authService, err := auth.NewAuthService()
+		authService, err := services.NewService()
 
 		if err != nil {
 			cmd.PrintErrf("Error: %v\n", err)

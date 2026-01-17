@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"cosoft-cli/internal/auth"
+	"cosoft-cli/internal/services"
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,7 +22,7 @@ func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 	config.Footer = "Press Ctrl + C to cancel"
 
 	// Try to get user info
-	authService, err := auth.NewAuthService()
+	authService, err := services.NewService()
 
 	if err != nil {
 		return err

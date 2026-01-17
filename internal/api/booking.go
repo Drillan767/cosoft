@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
 	"net/http"

@@ -4,7 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"cosoft-cli/internal/auth"
+	"cosoft-cli/internal/services"
 	"cosoft-cli/internal/settings"
 	"cosoft-cli/internal/ui"
 	"fmt"
@@ -49,7 +49,7 @@ func init() {
 }
 
 func requireAuth(cmd *cobra.Command, args []string) error {
-	authService, err := auth.NewAuthService()
+	authService, err := services.NewService()
 
 	if err != nil {
 		return err

@@ -2,7 +2,8 @@ package ui
 
 import (
 	"cosoft-cli/internal/api"
-	"cosoft-cli/internal/auth"
+	"cosoft-cli/internal/services"
+
 	"cosoft-cli/shared/models"
 	"fmt"
 
@@ -80,7 +81,7 @@ func (m *LandingModel) Init() tea.Cmd {
 
 func (m *LandingModel) fetchFutureBookings() tea.Cmd {
 	return func() tea.Msg {
-		authService, err := auth.NewAuthService()
+		authService, err := services.NewService()
 
 		if err != nil {
 			return futureBookingMsg{err: err}
@@ -101,7 +102,7 @@ func (m *LandingModel) fetchFutureBookings() tea.Cmd {
 
 func (m *LandingModel) updateCredits() tea.Cmd {
 	return func() tea.Msg {
-		authService, err := auth.NewAuthService()
+		authService, err := services.NewService()
 
 		if err != nil {
 			return nil
