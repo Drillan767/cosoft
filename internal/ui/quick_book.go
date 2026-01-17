@@ -66,6 +66,17 @@ func (qb *QuickBookModel) Init() tea.Cmd {
 }
 
 func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	// Let the list component process the message first
+	switch qb.phase {
+	case 0:
+		qb.durationList, cmd = qb.durationList.Update(msg)
+	case 1:
+		qb.nbPeopleList, cmd = qb.nbPeopleList.Update(msg)
+	}
+
+	// Then check for phase transitions after selection is confirmed
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		if msg.String() == "enter" {
@@ -74,8 +85,8 @@ func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if value := qb.durationList.GetSelection(); value != nil {
 					qb.payload.Duration = value.Value.(int)
 					qb.phase = 1
+					return qb, nil // Ignore tea.Quit from list
 				}
-				return qb, nil
 			case 1:
 				if value := qb.nbPeopleList.GetSelection(); value != nil {
 					qb.payload.NbPeople = value.Value.(int)
@@ -86,14 +97,6 @@ func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	var cmd tea.Cmd
-
-	switch qb.phase {
-	case 0:
-		qb.durationList, cmd = qb.durationList.Update(msg)
-	case 1:
-		qb.nbPeopleList, cmd = qb.nbPeopleList.Update(msg)
-	}
 	return qb, cmd
 }
 
