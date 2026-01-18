@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
 type QuickBookModel struct {
@@ -182,19 +183,11 @@ func (qb *QuickBookModel) View() string {
 
 		progress := qb.progress.View()
 
-		var details string
+		var t string
+		var toolTip string
 		if qb.bookPhase == 3 && qb.bookedRoom != nil {
-			startTime := qb.payload.DateTime
-			endTime := startTime.Add(time.Duration(qb.payload.Duration) * time.Minute)
-			dateFormat := "02/01/2006 15:04"
-
-			labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-			valueStyle := lipgloss.NewStyle().Bold(true)
-
-			details = "\n\n" +
-				labelStyle.Render("Room:     ") + valueStyle.Render(qb.bookedRoom.Name) + "\n" +
-				labelStyle.Render("Cost:     ") + valueStyle.Render(fmt.Sprintf("%.2f credits", qb.bookedRoom.Price)) + "\n" +
-				labelStyle.Render("Duration: ") + valueStyle.Render(fmt.Sprintf("%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)))
+			t = qb.generateTable()
+			toolTip = "You can now press \"ESC\" to go back to the main menu."
 		}
 
 		errMsg := ""
@@ -202,7 +195,7 @@ func (qb *QuickBookModel) View() string {
 			errMsg = "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Render(qb.err.Error())
 		}
 
-		return header + progress + details + errMsg
+		return header + progress + t + toolTip + errMsg
 
 	default:
 		return "Booking"
@@ -299,28 +292,53 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 			return bookingFailedMsg{err: fmt.Errorf("Not enough credits to perfor, the booking, aborting")}
 		}
 
-		/*
+		payload := api.CosoftBookingPayload{
+			QBAvailabilityPayload: api.QBAvailabilityPayload{
+				DateTime: qb.payload.DateTime,
+				NbPeople: qb.payload.NbPeople,
+				Duration: qb.payload.Duration,
+			},
+			UserCredits: savedCredits,
+			Room:        *pickedRoom,
+		}
 
-			payload := api.CosoftBookingPayload{
-				QBAvailabilityPayload: api.QBAvailabilityPayload{
-					DateTime: qb.payload.DateTime,
-					NbPeople: qb.payload.NbPeople,
-					Duration: qb.payload.Duration,
-				},
-				UserCredits: savedCredits,
-				Room:        *pickedRoom,
-			}
+		apiClient := api.NewApi()
 
-			apiClient := api.NewApi()
+		err = apiClient.BookRoom(user.WAuth, user.WAuthRefresh, payload)
 
-			// err = apiClient.BookRoom(user.WAuth, user.WAuthRefresh, payload)
-
-			if err != nil {
-				return bookingFailedMsg{err: err}
-			}
-
-		*/
+		if err != nil {
+			return bookingFailedMsg{err: err}
+		}
 
 		return bookingCompleteMsg{room: *pickedRoom}
 	}
+}
+
+func (qb *QuickBookModel) generateTable() string {
+	t := table.New().
+		Border(lipgloss.NormalBorder()).
+		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b"))).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			switch {
+			case row == table.HeaderRow:
+				return lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b")).Bold(true).Align(lipgloss.Center)
+			case col == 1:
+				return lipgloss.NewStyle().Padding(0, 1).Width(20).Foreground(lipgloss.Color("245"))
+			default:
+				return lipgloss.NewStyle().Padding(0, 1).Width(14).Foreground(lipgloss.Color("245"))
+			}
+		}).
+		Headers("ROOM", "DURATION", "COST")
+
+	startTime := qb.payload.DateTime
+	endTime := startTime.Add(time.Duration(qb.payload.Duration) * time.Minute)
+	dateFormat := "02/01/2006 15:04"
+
+	t.Row(
+		qb.bookedRoom.Name,
+		fmt.Sprintf("%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
+		fmt.Sprintf("%.2f credits", qb.bookedRoom.Price),
+	)
+
+	return "\n\n" + t.String() + "\n\n"
 }

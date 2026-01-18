@@ -191,7 +191,7 @@ func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http
 		IsVatRequired:    true,
 		IsStatusRequired: true,
 		CGV:              true,
-		PaymentType:      "credits",
+		PaymentType:      "credit",
 		Cart: []RoomBookingCartPayload{
 			{
 				CoworkingSpaceId: spaceId,

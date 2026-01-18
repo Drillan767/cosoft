@@ -75,7 +75,7 @@ type DateTime struct {
 
 type RoomBookingCartPayload struct {
 	CoworkingSpaceId string      `json:"coworkingSpaceId"`
-	CategoryId       string      `json:"categoryid"`
+	CategoryId       string      `json:"categoryId"`
 	ItemId           string      `json:"itemId"`
 	CartId           string      `json:"cartId"`
 	DateTimeAlt      DateTimeAlt `json:"startenddate_"`
@@ -96,7 +96,7 @@ type RoomBookingPayload struct {
 	LastName         string                   `json:"lastname"`
 	Address          string                   `json:"address"`
 	City             string                   `json:"city"`
-	ZipCode          string                   `json:"zipcode"`
+	ZipCode          string                   `json:"zipCode"`
 	Phone            string                   `json:"phone"`
 	Email            string                   `json:"email"`
 	Cart             []RoomBookingCartPayload `json:"cart"`
