@@ -1,16 +1,27 @@
 package api
 
-import "time"
+import (
+	"cosoft-cli/shared/models"
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type LoginPayload struct {
 	Email    string
 	Password string
 }
 
-type QuickBookPayload struct {
+type QBAvailabilityPayload struct {
 	DateTime time.Time
 	Duration int
 	NbPeople int
+}
+
+type CosoftBookingPayload struct {
+	QBAvailabilityPayload
+	Room        models.Room
+	UserCredits float64
 }
 
 type BrowsePayload struct {
@@ -35,4 +46,59 @@ type RoomResponse struct {
 type AvailableRoomsResponse struct {
 	VisitedItems   []RoomResponse `json:"VisitedItems"`
 	UnvisitedItems []RoomResponse `json:"UnvisitedItems"`
+}
+
+type DateTimePayload struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
+type AvailabilityBodyPayload struct {
+	Capacity         int             `json:"capacity"`
+	CategoryId       string          `json:"categoryId"`
+	CoworkingSpaceId string          `json:"coworkingSpaceId"`
+	DateTime         DateTimePayload `json:"datewithhours"`
+}
+
+type DateTimeAlt struct {
+	Date  string            `json:"date"`
+	Times []DateTimePayload `json:"times"`
+}
+
+type DateTime struct {
+	Start      string    `json:"start"`
+	End        string    `json:"end"`
+	Type       string    `json:"type"`
+	TimeSlotId any       `json:"timeSlotId"` // Will always be null
+	Id         uuid.UUID `json:"id"`
+}
+
+type RoomBookingCartPayload struct {
+	CoworkingSpaceId string      `json:"coworkingSpaceId"`
+	CategoryId       string      `json:"categoryid"`
+	ItemId           string      `json:"itemId"`
+	CartId           string      `json:"cartId"`
+	DateTimeAlt      DateTimeAlt `json:"startenddate_"`
+	DateTime         []DateTime  `json:"startenddate"`
+}
+
+type RoomBookingPayload struct {
+	IsUser           bool                     `json:"isUser"`
+	IsPerson         bool                     `json:"isPerson"`
+	IsVatRequired    bool                     `json:"isVatRequired"`
+	IsStatusRequired bool                     `json:"isStatusRequired"`
+	CGV              bool                     `json:"cgv"`
+	SocietyName      string                   `json:"societyname"`
+	SocietyVat       string                   `json:"societyvat"`
+	SocietySiret     string                   `json:"societysiret"`
+	SocietyStatus    string                   `json:"societystatus"`
+	FirstName        string                   `json:"firstname"`
+	LastName         string                   `json:"lastname"`
+	Address          string                   `json:"address"`
+	City             string                   `json:"city"`
+	ZipCode          string                   `json:"zipcode"`
+	Phone            string                   `json:"phone"`
+	Email            string                   `json:"email"`
+	Cart             []RoomBookingCartPayload `json:"cart"`
+	PaymentType      string                   `json:"paymentType"`
 }

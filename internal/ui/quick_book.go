@@ -24,8 +24,9 @@ type QuickBookModel struct {
 	progress     progress.Model
 	durationList components.ListModel
 	nbPeopleList components.ListModel
-	payload      *api.QuickBookPayload
+	payload      *api.QBAvailabilityPayload
 	rooms        []models.Room
+	bookedRoom   *models.Room
 	err          error
 }
 
@@ -33,35 +34,15 @@ type bookingProcessStart struct{}
 type roomFetchedMsg struct {
 	availableRooms []models.Room
 }
-type noRoomAvailableMsg struct{}
-type bookingCompleteMsg struct{}
+type bookingCompleteMsg struct {
+	room models.Room
+}
 type bookingFailedMsg struct {
 	err error
 }
 
-/*
- Rough logic flow:
-  phase 1 (enter pressed)
-    → return fetchRoomsCmd()
-    → set phase = 2 (show spinner + 0% bar)
-
-  Update receives roomsFetchedMsg
-    → store rooms in model
-    → return bookRoomCmd()
-    → set phase = 3 (show spinner + 50% bar)
-
-  Update receives bookingCompleteMsg
-    → store result in model
-    → set phase = 4 (show results + 100% bar)
-
-  Update receives any error msg
-    → store error in model
-    → set phase = 5 (error state)
-
-*/
-
 func NewQuickBookModel() *QuickBookModel {
-	selection := &api.QuickBookPayload{}
+	selection := &api.QBAvailabilityPayload{}
 	t := getClosestQuarterHour()
 	s := spinner.New()
 	s.Spinner = spinner.Dot
@@ -147,9 +128,22 @@ func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case roomFetchedMsg:
+		qb.rooms = msg.availableRooms
 		qb.bookPhase = 2
 		progressCmd := qb.progress.IncrPercent(0.5)
 		return qb, tea.Batch(progressCmd, qb.bookRoom())
+
+	case bookingCompleteMsg:
+		qb.bookedRoom = &msg.room
+		qb.bookPhase = 3
+		qb.progress = progress.New(
+			progress.WithSolidFill("#04B575"),
+			progress.WithWidth(100),
+			progress.WithoutPercentage(),
+		)
+		progressCmd := qb.progress.SetPercent(1.0)
+
+		return qb, progressCmd
 
 	case spinner.TickMsg:
 		var cmd tea.Cmd
@@ -175,24 +169,40 @@ func (qb *QuickBookModel) View() string {
 	case 1:
 		return qb.nbPeopleList.View()
 	case 2:
-		spin := qb.spinner.View()
+		var header string
 
 		switch qb.bookPhase {
 		case 1:
-			spin += " Looking for available rooms... \n\n"
+			header = qb.spinner.View() + " Looking for available rooms... \n\n"
 		case 2:
-			spin += " Found a meeting room. Booking now... \n\n"
+			header = qb.spinner.View() + " Found a meeting room. Booking now... \n\n"
+		case 3:
+			header = lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render("✓ Booking complete!") + "\n\n"
 		}
 
 		progress := qb.progress.View()
 
-		err := ""
+		var details string
+		if qb.bookPhase == 3 && qb.bookedRoom != nil {
+			startTime := qb.payload.DateTime
+			endTime := startTime.Add(time.Duration(qb.payload.Duration) * time.Minute)
+			dateFormat := "02/01/2006 15:04"
 
-		if qb.err != nil {
-			err = "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Render(qb.err.Error())
+			labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+			valueStyle := lipgloss.NewStyle().Bold(true)
+
+			details = "\n\n" +
+				labelStyle.Render("Room:     ") + valueStyle.Render(qb.bookedRoom.Name) + "\n" +
+				labelStyle.Render("Cost:     ") + valueStyle.Render(fmt.Sprintf("%.2f credits", qb.bookedRoom.Price)) + "\n" +
+				labelStyle.Render("Duration: ") + valueStyle.Render(fmt.Sprintf("%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)))
 		}
 
-		return spin + progress + err
+		errMsg := ""
+		if qb.err != nil {
+			errMsg = "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Render(qb.err.Error())
+		}
+
+		return header + progress + details + errMsg
 
 	default:
 		return "Booking"
@@ -236,7 +246,7 @@ func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
 
 		apiClient := api.NewApi()
 
-		payload := api.QuickBookPayload{
+		payload := api.QBAvailabilityPayload{
 			DateTime: qb.payload.DateTime,
 			NbPeople: qb.payload.NbPeople,
 			Duration: qb.payload.Duration,
@@ -257,5 +267,60 @@ func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
 }
 
 func (qb *QuickBookModel) bookRoom() tea.Cmd {
-	return nil
+	return func() tea.Msg {
+		authService, err := services.NewService()
+
+		if err != nil {
+			return bookingFailedMsg{err: err}
+		}
+
+		user, err := authService.GetAuthData()
+
+		if err != nil {
+			return bookingFailedMsg{err: err}
+		}
+
+		savedCredits := float64(user.Credits) / float64(100)
+
+		var pickedRoom *models.Room
+
+		for _, room := range qb.rooms {
+			if room.NbUsers >= qb.payload.NbPeople {
+				pickedRoom = &room
+				break
+			}
+		}
+
+		if pickedRoom == nil {
+			return bookingFailedMsg{err: fmt.Errorf("No room suiting user's selection, aborting")}
+		}
+
+		if savedCredits < pickedRoom.Price {
+			return bookingFailedMsg{err: fmt.Errorf("Not enough credits to perfor, the booking, aborting")}
+		}
+
+		/*
+
+			payload := api.CosoftBookingPayload{
+				QBAvailabilityPayload: api.QBAvailabilityPayload{
+					DateTime: qb.payload.DateTime,
+					NbPeople: qb.payload.NbPeople,
+					Duration: qb.payload.Duration,
+				},
+				UserCredits: savedCredits,
+				Room:        *pickedRoom,
+			}
+
+			apiClient := api.NewApi()
+
+			// err = apiClient.BookRoom(user.WAuth, user.WAuthRefresh, payload)
+
+			if err != nil {
+				return bookingFailedMsg{err: err}
+			}
+
+		*/
+
+		return bookingCompleteMsg{room: *pickedRoom}
+	}
 }

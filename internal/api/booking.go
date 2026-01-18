@@ -3,25 +3,16 @@ package api
 import (
 	"bytes"
 	"cosoft-cli/shared/models"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/google/uuid"
 )
-
-type DateTimePayload struct {
-	Start string `json:"start"`
-	End   string `json:"end"`
-}
-
-type AvailabilityBodyPayload struct {
-	Capacity         int             `json:"capacity"`
-	CategoryId       string          `json:"categoryId"`
-	CoworkingSpaceId string          `json:"coworkingSpaceId"`
-	DateTime         DateTimePayload `json:"datewithhours"`
-}
 
 func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (int, error) {
 
@@ -61,9 +52,14 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (int, error) {
 	return response.Total, nil
 }
 
-func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QuickBookPayload) ([]models.Room, error) {
+func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QBAvailabilityPayload) ([]models.Room, error) {
 
 	req, err := a.prepareRoomAvailabilityRequest(payload)
+
+	if err != nil {
+		return nil, err
+	}
+
 	client := &http.Client{}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -121,7 +117,28 @@ func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QuickBookPay
 	return rooms, nil
 }
 
-func (a *Api) prepareRoomAvailabilityRequest(payload QuickBookPayload) (*http.Request, error) {
+func (a *Api) BookRoom(wAuth, wAuthRefresh string, payload CosoftBookingPayload) error {
+	req, err := a.prepareRoomReservationRequest(payload)
+
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
+
+	_, err = client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Api) prepareRoomAvailabilityRequest(payload QBAvailabilityPayload) (*http.Request, error) {
 	dtp := DateTimePayload{
 		Start: payload.DateTime.Format(time.RFC3339),
 		End:   payload.DateTime.Add(time.Duration(payload.Duration) * time.Minute).Format(time.RFC3339),
@@ -160,6 +177,73 @@ func (a *Api) prepareRoomAvailabilityRequest(payload QuickBookPayload) (*http.Re
 	req.URL.RawQuery = q.Encode()
 
 	return req, nil
+}
+
+func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http.Request, error) {
+
+	startTime := payload.QBAvailabilityPayload.DateTime
+	endTime := payload.QBAvailabilityPayload.
+		DateTime.Add(time.Duration(payload.QBAvailabilityPayload.Duration) * time.Minute)
+
+	reservation := RoomBookingPayload{
+		IsUser:           true,
+		IsPerson:         true,
+		IsVatRequired:    true,
+		IsStatusRequired: true,
+		CGV:              true,
+		PaymentType:      "credits",
+		Cart: []RoomBookingCartPayload{
+			{
+				CoworkingSpaceId: spaceId,
+				CategoryId:       categoryId,
+				ItemId:           payload.Room.Id,
+				CartId:           randomStringGenerator(10),
+				DateTimeAlt: DateTimeAlt{
+					Date: time.Now().Format(time.RFC3339),
+					Times: []DateTimePayload{
+						{
+							Start: startTime.Format("15:04"),
+							End:   endTime.Format("15:04"),
+						},
+					},
+				},
+				DateTime: []DateTime{
+					{
+						Type:       "hour",
+						Start:      startTime.Format(time.RFC3339),
+						End:        endTime.Format(time.RFC3339),
+						Id:         uuid.New(),
+						TimeSlotId: nil,
+					},
+				},
+			},
+		},
+	}
+
+	jsonPayload, err := json.Marshal(reservation)
+
+	if err != nil {
+		return nil, err
+	}
+
+	a.debug(string(jsonPayload))
+
+	endpoint := fmt.Sprintf("%s/Payment/pay", apiUrl)
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+
+}
+
+func randomStringGenerator(length int) string {
+	b := make([]byte, length+2)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)[2 : length+2]
 }
 
 func (a *Api) debug(text string) {
