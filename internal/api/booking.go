@@ -226,8 +226,6 @@ func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http
 		return nil, err
 	}
 
-	a.debug(string(jsonPayload))
-
 	endpoint := fmt.Sprintf("%s/Payment/pay", apiUrl)
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))

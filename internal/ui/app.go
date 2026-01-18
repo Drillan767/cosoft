@@ -64,8 +64,10 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.currentPage = PageType(msg.Page)
 		switch msg.Page {
 		case "quick-book":
+			m.quickBookModel = NewQuickBookModel()
 			return m, m.quickBookModel.Init()
 		case "browse":
+			m.browseModel = NewBrowseModel()
 			return m, m.browseModel.Init()
 		default:
 			return m, nil
