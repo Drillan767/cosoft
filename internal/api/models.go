@@ -21,12 +21,8 @@ type BrowsePayload struct {
 	Duration  int
 }
 
-type CreditResponse struct {
-	ParsedValue float64 `json:"parsedValue"`
-}
-
 type PriceResponse struct {
-	Credits CreditResponse `json:"Credits"`
+	Credits float64 `json:"Credits"`
 }
 
 type RoomResponse struct {
