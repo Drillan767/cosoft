@@ -40,9 +40,9 @@ func DefaultLayoutConfig() LayoutConfig {
 		ShowHeader:  true,
 		ShowFooter:  true,
 		ShowBorder:  true,
-		BorderColor: "#fd4b4bff",
-		HeaderColor: "#f45656ff",
-		FooterColor: "#888888ff",
+		BorderColor: "#fd4b4b",
+		HeaderColor: "#f45656",
+		FooterColor: "#888888",
 	}
 }
 

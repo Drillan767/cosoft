@@ -102,13 +102,13 @@ func (m *LandingModel) fetchFutureBookings() tea.Cmd {
 
 func (m *LandingModel) updateCredits() tea.Cmd {
 	return func() tea.Msg {
-		authService, err := services.NewService()
+		s, err := services.NewService()
 
 		if err != nil {
 			return nil
 		}
 
-		credits, err := authService.UpdateCredits()
+		credits, err := s.UpdateCredits()
 
 		// Either failed, or there was nothing to update
 		if err != nil || credits == nil {
