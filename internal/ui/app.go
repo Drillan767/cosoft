@@ -9,12 +9,13 @@ type NavigateMsg struct {
 type BackToMenuMsg struct{}
 
 type AppModel struct {
-	currentPage    PageType
-	allowBackNav   bool
-	quitting       bool
-	landingModel   *LandingModel
-	quickBookModel *QuickBookModel
-	browseModel    *BrowseModel
+	currentPage          PageType
+	allowBackNav         bool
+	quitting             bool
+	landingModel         *LandingModel
+	quickBookModel       *QuickBookModel
+	browseModel          *BrowseModel
+	reservationListModel *ReservationListModel
 	// Add others
 }
 
@@ -24,17 +25,18 @@ const (
 	PageLanding      PageType = "landing"
 	PageQuickBook    PageType = "quick-book"
 	PageBrowse       PageType = "browse"
-	PageReservations PageType = "resa"
+	PageReservations PageType = "reservations"
 	PageSettings     PageType = "settings"
 )
 
 func NewAppModel(startPage string, allowBackNav bool) *AppModel {
 	return &AppModel{
-		currentPage:    PageType(startPage),
-		allowBackNav:   allowBackNav,
-		landingModel:   NewLandingModel(),
-		quickBookModel: NewQuickBookModel(),
-		browseModel:    NewBrowseModel(),
+		currentPage:          PageType(startPage),
+		allowBackNav:         allowBackNav,
+		landingModel:         NewLandingModel(),
+		quickBookModel:       NewQuickBookModel(),
+		browseModel:          NewBrowseModel(),
+		reservationListModel: NewReservationListModel(),
 		// Add others
 	}
 }
@@ -47,6 +49,8 @@ func (m *AppModel) Init() tea.Cmd {
 		return m.quickBookModel.Init()
 	case "browse":
 		return m.browseModel.Init()
+	case "reservations":
+		return m.reservationListModel.Init()
 	default:
 		return m.landingModel.Init()
 	}
@@ -69,6 +73,9 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "browse":
 			m.browseModel = NewBrowseModel()
 			return m, m.browseModel.Init()
+		case "reservations":
+			m.reservationListModel = NewReservationListModel()
+			return m, m.reservationListModel.Init()
 		default:
 			return m, nil
 		}
@@ -106,6 +113,10 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newModel, cmd := m.browseModel.Update(msg)
 		m.browseModel = newModel.(*BrowseModel)
 		return m, cmd
+	case PageReservations:
+		newModel, cmd := m.reservationListModel.Update(msg)
+		m.reservationListModel = newModel.(*ReservationListModel)
+		return m, cmd
 		// Add other pages here as you create them
 	}
 
@@ -125,6 +136,8 @@ func (m *AppModel) View() string {
 		return m.quickBookModel.View()
 	case PageBrowse:
 		return m.browseModel.View()
+	case PageReservations:
+		return m.reservationListModel.View()
 	// Others
 	default:
 		return "unknown page"

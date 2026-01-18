@@ -1,17 +1,5 @@
 # General workflow
 
-## On startup 
-
-- Check if refresh token available through `zalando/go-keyring`
-    - If exist, attempt connect
-    - If connect fails or nothing found in keyring, display login screen
-
-- Check if something exists at `~/.cosoft-cli/settings.yml`
-    - If exist, load and parse the informations
-    - If not, create the file
-
-- Redirect to "main"
-
 ## Main display
 
 - Calendar view of upcoming reservations in grid
@@ -233,52 +221,20 @@ type Reservation strut {
 10. Since the requirement no longer blocks the flow, `root.go` can now run the "landing" script (root:28)
 11. By the way, the `StartApp()` function is the one responsible for display data in the layout (ui/main:24)
 
-# Booking payload
+# Cancellation
 
-```json5
+You **cannot** cancel a reservation that has already started
+
+URL:
+
+```
+https://hub612.cosoft.fr/v2/api/api/Reservation/cancel-order
+```
+
+Payload:
+
+```
 {
-    "isUser": true,
-    "isPerson": true,
-    "isVatRequired": true,
-    "isStatusRequired": true,
-    "cgv": true,
-    "societyname": "",
-    "societyvat": "",
-    "societysiret": "",
-    "societystatus": "",
-    "firstname": "",
-    "lastname": "",
-    "address": "",
-    "city": "",
-    "zipCode": "",
-    "phone": "",
-    "email": "",
-    "cart": [
-        {
-            "coworkingSpaceId": "a4928a70-38c1-42b9-96f9-b2dd00db5b02", // Already available
-            "categoryId": "7f1e5757-b9b9-4530-84ad-b2dd00db5f0f", // Already available
-            "itemId": "d3cd63da-287e-486e-9e00-b2dd00eb9085", // Room ID
-            "startenddate_": { // Not sure if required, maybe skippable
-                "date": "2026-01-17T11:43:03", // time.Now() I guess
-                "times": [
-                    {
-                        "start": "12:30:00",
-                        "end": "13:00:00"
-                    }
-                ]
-            },
-            "startenddate": [
-                {
-                    "start": "2026-01-17T12:30:00",
-                    "end": "2026-01-17T13:00:00",
-                    "type": "hour",
-                    "timeSlotId": null,
-                    "id": "d3cd63da-287e-486e-9e00-b2dd00eb9085" // Needs to be generated from our side (Also random)
-                }
-            ],
-            "cartId": "a5Oe1thSq8" // Randomly generated alphanumeric string of 10 characters
-        }
-    ],
-    "paymentType": "credit"
+    Id: d378b30e-a30b-4267-aee7-b3d601030b1b // OrderResourceRentId
 }
 ```

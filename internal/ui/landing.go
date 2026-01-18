@@ -60,7 +60,7 @@ func (m *LandingModel) buildForm() {
 				Options(
 					huh.NewOption("Quick book", "quick-book"),
 					huh.NewOption("Browse & book", "browse"),
-					huh.NewOption(resaLabel, "resa"),
+					huh.NewOption(resaLabel, "reservations"),
 					huh.NewOption("Previous reservations", "history"),
 					huh.NewOption("Settings", "settings"),
 					huh.NewOption("Quit", "quit"),
