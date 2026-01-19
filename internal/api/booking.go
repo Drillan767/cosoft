@@ -14,11 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (int, error) {
-
-	type FutureBookingsResponse struct {
-		Total int `json:"total"`
-	}
+func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (*FutureBookingsResponse, error) {
 
 	req, err := http.NewRequest(
 		"GET",
@@ -27,7 +23,7 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (int, error) {
 	)
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	client := &http.Client{}
@@ -38,7 +34,7 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (int, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	defer resp.Body.Close()
@@ -46,10 +42,10 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (int, error) {
 	response := FutureBookingsResponse{}
 
 	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return response.Total, nil
+	return &response, nil
 }
 
 func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QBAvailabilityPayload) ([]models.Room, error) {
@@ -119,6 +115,38 @@ func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QBAvailabili
 
 func (a *Api) BookRoom(wAuth, wAuthRefresh string, payload CosoftBookingPayload) error {
 	req, err := a.prepareRoomReservationRequest(payload)
+
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
+
+	_, err = client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *Api) CancelBooking(wAuth, wAuthRefresh, bookingId string) error {
+	p := CancellationPayload{
+		Id: bookingId,
+	}
+
+	jsonPayload, err := json.Marshal(p)
+
+	if err != nil {
+		return err
+	}
+
+	endpoint := fmt.Sprintf("%s/Reservation/cancel-order", apiUrl)
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))
 
 	if err != nil {
 		return err

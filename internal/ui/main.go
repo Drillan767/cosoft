@@ -3,6 +3,7 @@ package ui
 import (
 	"cosoft-cli/internal/services"
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -18,7 +19,7 @@ func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 
 	config := DefaultLayoutConfig()
 	config.Header.Left = "COSOFT CLI"
-	config.Header.Center = startPage // Initial location
+	config.Header.Center = strings.ToUpper(startPage[:1]) + startPage[1:] // Initial location
 	config.Footer = "Press Ctrl + C to cancel"
 
 	// Try to get user info

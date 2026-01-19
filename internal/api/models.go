@@ -102,3 +102,20 @@ type RoomBookingPayload struct {
 	Cart             []RoomBookingCartPayload `json:"cart"`
 	PaymentType      string                   `json:"paymentType"`
 }
+
+type Reservation struct {
+	OrderResourceRentId string  `json:"OrderResourceRentId"`
+	ItemName            string  `json:"ItemName"`
+	Start               string  `json:"Start"`
+	End                 string  `json:"End"`
+	Credits             float64 `json:"Credits"`
+}
+
+type FutureBookingsResponse struct {
+	Total int           `json:"total"`
+	Data  []Reservation `json:"data"`
+}
+
+type CancellationPayload struct {
+	Id string `json:"Id"`
+}

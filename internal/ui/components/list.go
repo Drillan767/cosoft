@@ -68,13 +68,13 @@ func NewListModel(items []Item, title string) ListModel {
 		listItems[i] = item
 	}
 
-	l := list.New(listItems, ListItemDelegate{}, 80, 20)
+	l := list.New(listItems, ListItemDelegate{}, 100, 20)
 
 	l.Title = title
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.Styles.Title = lipgloss.NewStyle().
-		Margin(1, 0, 1, 2).
+		Margin(1, 0).
 		Foreground(lipgloss.Color("62")).
 		Bold(true)
 
@@ -91,7 +91,7 @@ func (m ListModel) Update(msg tea.Msg) (ListModel, tea.Cmd) {
 		case "enter":
 			m.selected = m.list.SelectedItem().(Item)
 			m.confirmed = true
-			return m, tea.Quit
+			return m, nil
 		case "esc":
 			return m, tea.Quit
 		}

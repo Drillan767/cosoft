@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type LandingModel struct {
@@ -21,8 +22,8 @@ type LandingModel struct {
 }
 
 type futureBookingMsg struct {
-	total int
-	err   error
+	bookings *api.FutureBookingsResponse
+	err      error
 }
 
 type updatedCreditsMsg struct {
@@ -34,6 +35,7 @@ func NewLandingModel() *LandingModel {
 
 	s := spinner.New()
 	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 
 	m := &LandingModel{
 		selection:        selection,
@@ -94,9 +96,9 @@ func (m *LandingModel) fetchFutureBookings() tea.Cmd {
 		}
 
 		apiClient := api.NewApi()
-		total, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
+		b, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
 
-		return futureBookingMsg{total: total, err: err}
+		return futureBookingMsg{bookings: b, err: err}
 	}
 }
 
@@ -127,7 +129,7 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.buildForm()
 			return m, m.form.Init()
 		}
-		m.nbFutureBookings = msg.total
+		m.nbFutureBookings = msg.bookings.Total
 		m.loading = false
 		m.buildForm() // Rebuild form with updated data
 		return m, m.form.Init()
