@@ -18,7 +18,7 @@ type ReservationListModel struct {
 	phase           int
 	spinner         spinner.Model
 	bookingId       string
-	reservationList components.ListModel
+	reservationList *components.ListField[string]
 	confirm         *huh.Form
 	comfirmed       bool
 	reservations    api.FutureBookingsResponse
@@ -57,15 +57,18 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch rl.phase {
 	case 1:
-		rl.reservationList, cmd = rl.reservationList.Update(msg)
+		m, c := rl.reservationList.Update(msg)
+		rl.reservationList = m.(*components.ListField[string])
+		cmd = c
 	}
 
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
 		if msg.String() == "enter" && rl.phase == 1 {
-			if value := rl.reservationList.GetSelection(); value != nil {
-				rl.bookingId = value.Value.(string)
+			if rl.reservationList.IsSelected() {
+				value := rl.reservationList.SelectedItem()
+				rl.bookingId = value.Value
 				rl.phase = 2
 				return rl, nil
 			}
@@ -192,7 +195,7 @@ func (rl *ReservationListModel) cancelReservation() tea.Cmd {
 }
 
 func (rl *ReservationListModel) buildReservationList() error {
-	list := make([]components.Item, len(rl.reservations.Data))
+	list := make([]components.Item[string], len(rl.reservations.Data))
 
 	for i, r := range rl.reservations.Data {
 		parsedStart, err := time.Parse("2006-01-02T15:04:05", r.Start)
@@ -209,7 +212,7 @@ func (rl *ReservationListModel) buildReservationList() error {
 
 		dateFormat := "02/01/2006 15:04"
 
-		list[i] = components.Item{
+		list[i] = components.Item[string]{
 			Label: r.ItemName,
 			Value: r.OrderResourceRentId,
 			Subtitle: fmt.Sprintf(
@@ -221,7 +224,7 @@ func (rl *ReservationListModel) buildReservationList() error {
 		}
 	}
 
-	rl.reservationList = components.NewListModel(list, "Pick a reservation to cancel it")
+	rl.reservationList = components.NewListField(list, "Pick a reservation to cancel it")
 
 	return nil
 }

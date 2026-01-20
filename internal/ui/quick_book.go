@@ -12,23 +12,23 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/lipgloss/table"
 )
 
 type QuickBookModel struct {
-	// 0 select duration, 1 select nb people, 2 display future loader, 3 display results
+	// 0 form, 1 display loader, 2 display results
 	phase int
-	// 0 fetch available rooms 1 booking complete
-	bookPhase    int
-	spinner      spinner.Model
-	progress     progress.Model
-	durationList components.ListModel
-	nbPeopleList components.ListModel
-	payload      *api.QBAvailabilityPayload
-	rooms        []models.Room
-	bookedRoom   *models.Room
-	err          error
+	// 0 fetch available rooms, 1 booking in progress, 2 booking complete
+	bookPhase  int
+	spinner    spinner.Model
+	progress   progress.Model
+	form       *huh.Form
+	payload    *api.QBAvailabilityPayload
+	rooms      []models.Room
+	bookedRoom *models.Room
+	err        error
 }
 
 type bookingProcessStart struct{}
@@ -44,7 +44,6 @@ type bookingFailedMsg struct {
 
 func NewQuickBookModel() *QuickBookModel {
 	selection := &api.QBAvailabilityPayload{}
-	t := getClosestQuarterHour()
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
@@ -55,79 +54,25 @@ func NewQuickBookModel() *QuickBookModel {
 		progress.WithoutPercentage(),
 	)
 
-	durations := []components.Item{
-		{
-			Label:    "30 minutes",
-			Subtitle: fmt.Sprintf("From %s to %s", t.Format("15:04"), t.Add(30*time.Minute).Format("15:04")),
-			Value:    30,
-		},
-		{
-			Label:    "1 hour",
-			Subtitle: fmt.Sprintf("From %s to %s", t.Format("15:04"), t.Add(60*time.Minute).Format("15:04")),
-			Value:    60,
-		},
+	qb := &QuickBookModel{
+		phase:    0,
+		payload:  selection,
+		spinner:  s,
+		progress: progress,
+		rooms:    []models.Room{},
 	}
 
-	peoples := []components.Item{
-		{
-			Label:    "1 person",
-			Subtitle: "The research will include callboxes",
-			Value:    1,
-		},
-		{
-			Label:    "2 persons or more",
-			Subtitle: "The research will default to classic meeting rooms",
-			Value:    2,
-		},
-	}
+	qb.buildForm()
 
-	return &QuickBookModel{
-		phase:        0,
-		durationList: components.NewListModel(durations, "For how long?"),
-		nbPeopleList: components.NewListModel(peoples, "For how many people?"),
-		payload:      selection,
-		spinner:      s,
-		progress:     progress,
-		rooms:        []models.Room{},
-	}
+	return qb
 }
 
 func (qb *QuickBookModel) Init() tea.Cmd {
-	return nil
+	return qb.form.Init()
 }
 
 func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	switch qb.phase {
-	case 0:
-		qb.durationList, cmd = qb.durationList.Update(msg)
-	case 1:
-		qb.nbPeopleList, cmd = qb.nbPeopleList.Update(msg)
-	}
-
 	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-		if msg.String() == "enter" {
-			switch qb.phase {
-			case 0:
-				if value := qb.durationList.GetSelection(); value != nil {
-					qb.payload.Duration = value.Value.(int)
-					qb.payload.DateTime = getClosestQuarterHour()
-					qb.phase = 1
-					return qb, nil
-				}
-			case 1:
-				if value := qb.nbPeopleList.GetSelection(); value != nil {
-					qb.payload.NbPeople = value.Value.(int)
-					qb.phase = 2
-					qb.bookPhase = 1
-					return qb, tea.Batch(qb.spinner.Tick, qb.getRoomsAvailability())
-				}
-			}
-		}
-
 	case roomFetchedMsg:
 		qb.rooms = msg.availableRooms
 		qb.bookPhase = 2
@@ -160,16 +105,31 @@ func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return qb, cmd
 	}
 
-	return qb, cmd
+	// Update form during phase 0
+	if qb.phase == 0 {
+		form, cmd := qb.form.Update(msg)
+		if f, ok := form.(*huh.Form); ok {
+			qb.form = f
+		}
+
+		if qb.form.State == huh.StateCompleted {
+			qb.payload.DateTime = getClosestQuarterHour()
+			qb.phase = 1
+			qb.bookPhase = 1
+			return qb, tea.Batch(qb.spinner.Tick, qb.getRoomsAvailability())
+		}
+
+		return qb, cmd
+	}
+
+	return qb, nil
 }
 
 func (qb *QuickBookModel) View() string {
 	switch qb.phase {
 	case 0:
-		return qb.durationList.View()
+		return qb.form.View()
 	case 1:
-		return qb.nbPeopleList.View()
-	case 2:
 		var header string
 
 		switch qb.bookPhase {
@@ -224,6 +184,45 @@ func getClosestQuarterHour() time.Time {
 		0,
 		now.Location(),
 	)
+}
+
+func (qb *QuickBookModel) buildForm() {
+	t := getClosestQuarterHour()
+
+	durations := []components.Item[int]{
+		{
+			Label:    "30 minutes",
+			Subtitle: fmt.Sprintf("From %s to %s", t.Format("15:04"), t.Add(30*time.Minute).Format("15:04")),
+			Value:    30,
+		},
+		{
+			Label:    "1 hour",
+			Subtitle: fmt.Sprintf("From %s to %s", t.Format("15:04"), t.Add(60*time.Minute).Format("15:04")),
+			Value:    60,
+		},
+	}
+
+	peoples := []components.Item[int]{
+		{
+			Label:    "1 person",
+			Subtitle: "The research will include callboxes",
+			Value:    1,
+		},
+		{
+			Label:    "2 persons or more",
+			Subtitle: "The research will default to classic meeting rooms",
+			Value:    2,
+		},
+	}
+
+	qb.form = huh.NewForm(
+		huh.NewGroup(
+			components.NewListField(durations, "For how long?").
+				Value(&qb.payload.Duration),
+			components.NewListField(peoples, "For how many people?").
+				Value(&qb.payload.NbPeople),
+		),
+	).WithLayout(huh.LayoutStack)
 }
 
 func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
