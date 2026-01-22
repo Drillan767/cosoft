@@ -83,6 +83,47 @@ func extractRefreshToken(cookies []string) string {
 	return ""
 }
 
+func (a *Api) GetAuth(wAuth, wAuthRefresh string) error {
+
+	type Result struct {
+	}
+
+	req, err := http.NewRequest(
+		"GET",
+		apiUrl+"/users/auth",
+		nil,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	response := AuthPayload{}
+
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return err
+	}
+
+	if !response.IsAuth || response.User == nil {
+		return fmt.Errorf("Wrong username / password")
+	}
+
+	return nil
+}
+
 func (a *Api) GetCredits(wAuth, wAuthRefresh string) (float64, error) {
 	req, err := http.NewRequest(
 		"GET",

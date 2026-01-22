@@ -3,7 +3,7 @@ package storage
 import (
 	"cosoft-cli/internal/api"
 	"database/sql"
-	"fmt"
+	"errors"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -11,6 +11,11 @@ import (
 
 type Store struct {
 	db *sql.DB
+}
+
+type Cookies struct {
+	WAuth        string `db:"w_auth"`
+	WAuthRefresh string `db:"w_auth_refresh"`
 }
 
 func NewStore(dbPath string) (*Store, error) {
@@ -56,24 +61,26 @@ func (s *Store) SetupDatabase(dbPath string) error {
 	return nil
 }
 
-func (s *Store) HasActiveToken() (bool, error) {
-	// Check if user exists (cookies don't expire on our side, server handles it)
-	query := `SELECT 1 FROM users LIMIT 1`
+func (s *Store) HasActiveToken() (*Cookies, error) {
+	query := `SELECT w_auth, w_auth_refresh FROM users LIMIT 1`
 
-	var result int
-	err := s.db.QueryRow(query).Scan(&result)
+	var result Cookies
+	err := s.db.QueryRow(query).Scan(
+		&result.WAuth,
+		&result.WAuthRefresh,
+	)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
 		}
-		return false, err
+		return nil, err
 	}
 
-	return true, nil
+	return &result, nil
 }
 
-func (s *Store) CreateUser(user *api.UserResponse, wAuth, wAuthRefresh string) error {
+func (s *Store) SetUser(user *api.UserResponse, wAuth, wAuthRefresh string) error {
 	var nbUsers int
 
 	rows, err := s.db.Query("SELECT COUNT(*) FROM users;")
@@ -90,39 +97,44 @@ func (s *Store) CreateUser(user *api.UserResponse, wAuth, wAuthRefresh string) e
 		}
 	}
 
-	if nbUsers > 0 {
-		return fmt.Errorf("A user already exists, aborting.")
+	if nbUsers == 0 {
+		query := `
+		        INSERT INTO users (id, email, first_name, last_name, credits, w_auth, w_auth_refresh, slack_user_id, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+				ON CONFLICT (email) DO UPDATE SET
+					id = excluded.id,
+					email = excluded.email,
+					first_name = excluded.first_name,
+					last_name = excluded.last_name,
+					credits = excluded.credits,
+					w_auth = excluded.w_auth,
+					w_auth_refresh = excluded.w_auth_refresh,
+					slack_user_id = excluded.slack_user_id,
+					created_at = excluded.created_at
+				`
+
+		_, err = s.db.Exec(
+			query,
+			user.Id,
+			user.Email,
+			user.FirstName,
+			user.LastName,
+			user.Credits*100,
+			wAuth,
+			wAuthRefresh,
+			nil,
+			time.Now(),
+		)
+
+		return err
+	} else if nbUsers == 1 {
+		query := `UPDATE users SET w_auth = ?, w_auth_refresh = ? WHERE id = ?`
+		_, err := s.db.Exec(query, wAuth, wAuthRefresh, user.Id)
+
+		return err
 	}
 
-	query := `
-        INSERT INTO users (id, email, first_name, last_name, credits, w_auth, w_auth_refresh, slack_user_id, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT (email) DO UPDATE SET
-			id = excluded.id,
-			email = excluded.email,
-			first_name = excluded.first_name,
-			last_name = excluded.last_name,
-			credits = excluded.credits,
-			w_auth = excluded.w_auth,
-			w_auth_refresh = excluded.w_auth_refresh,
-			slack_user_id = excluded.slack_user_id,
-			created_at = excluded.created_at
-		`
-
-	_, err = s.db.Exec(
-		query,
-		user.Id,
-		user.Email,
-		user.FirstName,
-		user.LastName,
-		user.Credits*100,
-		wAuth,
-		wAuthRefresh,
-		nil,
-		time.Now(),
-	)
-
-	return err
+	return errors.New("too many users")
 }
 
 func (s *Store) GetUserData() (*User, error) {
@@ -192,7 +204,7 @@ func (s *Store) UpdateCredits() (*float64, error) {
 		return nil, err
 	}
 
-	savedCredits := float64(uc.Credits) / float64(100)
+	savedCredits := uc.Credits / float64(100)
 
 	if savedCredits == newCredits {
 		return nil, nil
