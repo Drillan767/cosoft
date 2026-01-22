@@ -14,15 +14,14 @@ import (
 )
 
 type ReservationListModel struct {
-	loading         bool
-	phase           int
-	spinner         spinner.Model
-	bookingId       string
-	reservationList *components.ListField[string]
-	confirm         *huh.Form
-	comfirmed       bool
-	reservations    api.FutureBookingsResponse
-	err             error
+	loading      bool
+	phase        int
+	spinner      spinner.Model
+	bookingId    string
+	form         *huh.Form
+	confirmed    bool
+	reservations api.FutureBookingsResponse
+	err          error
 }
 
 type cancelComplete struct{}
@@ -35,11 +34,9 @@ func NewReservationListModel() *ReservationListModel {
 	rl := &ReservationListModel{
 		phase:     0,
 		loading:   true,
-		comfirmed: true,
+		confirmed: true,
 		spinner:   s,
 	}
-
-	rl.buildConfirmForm()
 
 	return rl
 }
@@ -48,7 +45,6 @@ func (rl *ReservationListModel) Init() tea.Cmd {
 	return tea.Batch(
 		rl.spinner.Tick,
 		rl.fetchFutureBookings(),
-		rl.confirm.Init(),
 	)
 }
 
@@ -57,22 +53,12 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch rl.phase {
 	case 1:
-		m, c := rl.reservationList.Update(msg)
-		rl.reservationList = m.(*components.ListField[string])
+		m, c := rl.form.Update(msg)
+		rl.form = m.(*huh.Form)
 		cmd = c
 	}
 
 	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-		if msg.String() == "enter" && rl.phase == 1 {
-			if rl.reservationList.IsSelected() {
-				value := rl.reservationList.SelectedItem()
-				rl.bookingId = value.Value
-				rl.phase = 2
-				return rl, nil
-			}
-		}
 
 	case futureBookingMsg:
 		rl.loading = false
@@ -83,13 +69,13 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		rl.reservations = *msg.bookings
-		if err := rl.buildReservationList(); err != nil {
+		if err := rl.buildForm(); err != nil {
 			rl.err = err
 			return rl, nil
 		}
 
 		rl.phase = 1
-		return rl, nil
+		return rl, rl.form.Init()
 
 	case cancelComplete:
 		rl.loading = false
@@ -102,14 +88,14 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return rl, cmd
 	}
 
-	form, cmd := rl.confirm.Update(msg)
+	form, cmd := rl.form.Update(msg)
 
 	if f, ok := form.(*huh.Form); ok {
-		rl.confirm = f
+		rl.form = f
 	}
 
-	if rl.confirm.State == huh.StateCompleted {
-		rl.phase = 3
+	if rl.form.State == huh.StateCompleted {
+		rl.phase = 2
 		rl.loading = true
 		return rl, tea.Batch(rl.spinner.Tick, rl.cancelReservation())
 	}
@@ -128,14 +114,12 @@ func (rl *ReservationListModel) View() string {
 			return fmt.Sprintf("\n %s Loading reservations...\n", rl.spinner.View())
 		}
 	case 1:
-		return rl.reservationList.View()
+		return rl.form.View()
 	case 2:
-		return rl.confirm.View()
-	case 3:
 		if rl.loading {
 			return fmt.Sprintf("\n %s Cancelling reservation...\n", rl.spinner.View())
 		}
-	case 4:
+	case 3:
 		success := lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render("✓ Booking cancelled successfully!")
 		toolTip := "You can now press \"ESC\" to go back to the main menu."
 
@@ -194,7 +178,7 @@ func (rl *ReservationListModel) cancelReservation() tea.Cmd {
 	}
 }
 
-func (rl *ReservationListModel) buildReservationList() error {
+func (rl *ReservationListModel) buildForm() error {
 	list := make([]components.Item[string], len(rl.reservations.Data))
 
 	for i, r := range rl.reservations.Data {
@@ -224,19 +208,16 @@ func (rl *ReservationListModel) buildReservationList() error {
 		}
 	}
 
-	rl.reservationList = components.NewListField(list, "Pick a reservation to cancel it")
-
-	return nil
-}
-
-func (rl *ReservationListModel) buildConfirmForm() {
-	rl.confirm = huh.NewForm(
+	rl.form = huh.NewForm(
 		huh.NewGroup(
+			components.NewListField(list, "Pick a reservation to cancel it").Value(&rl.bookingId),
 			huh.NewConfirm().
 				Title("Confirm cancellation?").
-				Affirmative("Yes").
 				Negative("No").
-				Value(&rl.comfirmed),
+				Affirmative("Yes").
+				Value(&rl.confirmed),
 		),
 	)
+
+	return nil
 }

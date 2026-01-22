@@ -147,9 +147,10 @@ func (f *ListField[T]) View() string {
 	for i, item := range f.items {
 		isCursor := i == f.cursor
 
-		labelStyle := lipgloss.NewStyle().Padding(0, 2)
+		labelStyle := lipgloss.NewStyle().Padding(0, 2).Width(f.width / 2)
 		subtitleStyle := lipgloss.NewStyle().
 			Padding(0, 2).
+			Width(f.width / 2).
 			Foreground(lipgloss.Color("8"))
 
 		if isCursor {
