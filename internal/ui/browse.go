@@ -2,17 +2,29 @@ package ui
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/shared/models"
 	"fmt"
 	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 )
 
 type BrowseModel struct {
-	form    *huh.Form
-	choices *api.BrowsePayload
+	phase      int
+	spinner    spinner.Model
+	rooms      []models.Room
+	bookedRoom *models.Room
+	searchForm *huh.Form
+	bookForm   *huh.Form
+	choices    *api.BrowsePayload
 }
+
+/*
+Step 1
+- Get
+*/
 
 func NewBrowseModel() *BrowseModel {
 	choices := &api.BrowsePayload{}
@@ -29,28 +41,35 @@ func NewBrowseModel() *BrowseModel {
 				Description("The hour needs to be rounded to the quarter (ex: 9:15, 10:30, etc)").
 				Validate(validateHour).
 				Value(&choices.StartHour),
+			huh.NewSelect[int]().
+				Title("Reservation duration").
+				Options(
+					huh.NewOption("30mn", 30),
+					huh.NewOption("1 hour", 60),
+				).
+				Value(&choices.Duration),
 		),
 	)
 
 	return &BrowseModel{
-		form:    form,
-		choices: choices,
+		searchForm: form,
+		choices:    choices,
 	}
 }
 
 func validateDateIsFuture(s string) error {
 	if s == "" {
-		return fmt.Errorf("Date is required")
+		return fmt.Errorf("date is required")
 	}
 
 	date, err := time.Parse(time.DateOnly, s)
 
 	if err != nil {
-		return fmt.Errorf("Date could not be parsed")
+		return fmt.Errorf("date could not be parsed")
 	}
 
 	if time.Now().After(date) {
-		return fmt.Errorf("Date is not in the future")
+		return fmt.Errorf("date is not in the future")
 	}
 
 	return nil
@@ -58,42 +77,42 @@ func validateDateIsFuture(s string) error {
 
 func validateHour(s string) error {
 	if s == "" {
-		return fmt.Errorf("Hour is required")
+		return fmt.Errorf("hour is required")
 	}
 
-	time, err := time.Parse("15:04", s)
+	h, err := time.Parse("15:04", s)
 
 	if err != nil {
-		return fmt.Errorf("Could not parse time")
+		return fmt.Errorf("could not parse time")
 	}
 
-	hours := time.Hour()
+	hours := h.Hour()
 
 	if hours < 8 || hours > 20 {
-		return fmt.Errorf("Hours outside opening hours")
+		return fmt.Errorf("hours outside opening hours")
 	}
 
-	minutes := time.Minute()
+	minutes := h.Minute()
 
 	if minutes%15 != 0 {
-		return fmt.Errorf("Minutes not rounded to quarters")
+		return fmt.Errorf("minutes not rounded to quarters")
 	}
 
 	return nil
 }
 
 func (b *BrowseModel) Init() tea.Cmd {
-	return b.form.Init()
+	return b.searchForm.Init()
 }
 
 func (b *BrowseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	form, cmd := b.form.Update(msg)
+	form, cmd := b.searchForm.Update(msg)
 
 	if f, ok := form.(*huh.Form); ok {
-		b.form = f
+		b.searchForm = f
 	}
 
-	if b.form.State == huh.StateCompleted {
+	if b.searchForm.State == huh.StateCompleted {
 		// Step 2 or whatever
 	}
 
@@ -101,7 +120,7 @@ func (b *BrowseModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (b *BrowseModel) View() string {
-	return b.form.View()
+	return b.searchForm.View()
 }
 
 func (b *BrowseModel) GetChoice() *api.BrowsePayload {
