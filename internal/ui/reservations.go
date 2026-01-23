@@ -79,7 +79,7 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case cancelComplete:
 		rl.loading = false
-		rl.phase = 4
+		rl.phase = 3
 		return rl, nil
 
 	case spinner.TickMsg:
