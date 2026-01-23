@@ -25,7 +25,7 @@ type QuickBookModel struct {
 	spinner    spinner.Model
 	progress   progress.Model
 	form       *huh.Form
-	payload    *api.QBAvailabilityPayload
+	payload    *api.CosoftAvailabilityPayload
 	rooms      []models.Room
 	bookedRoom *models.Room
 	err        error
@@ -43,12 +43,12 @@ type bookingFailedMsg struct {
 }
 
 func NewQuickBookModel() *QuickBookModel {
-	selection := &api.QBAvailabilityPayload{}
+	selection := &api.CosoftAvailabilityPayload{}
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 
-	progress := progress.New(
+	p := progress.New(
 		progress.WithDefaultGradient(),
 		progress.WithWidth(100),
 		progress.WithoutPercentage(),
@@ -58,7 +58,7 @@ func NewQuickBookModel() *QuickBookModel {
 		phase:    0,
 		payload:  selection,
 		spinner:  s,
-		progress: progress,
+		progress: p,
 		rooms:    []models.Room{},
 	}
 
@@ -141,7 +141,7 @@ func (qb *QuickBookModel) View() string {
 			header = lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render("✓ Booking complete!") + "\n\n"
 		}
 
-		progress := qb.progress.View()
+		p := qb.progress.View()
 
 		var t string
 		var toolTip string
@@ -155,7 +155,7 @@ func (qb *QuickBookModel) View() string {
 			errMsg = "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Render(qb.err.Error())
 		}
 
-		return header + progress + t + toolTip + errMsg
+		return header + p + t + toolTip + errMsg
 
 	default:
 		return "Booking"
@@ -238,7 +238,7 @@ func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
 
 		apiClient := api.NewApi()
 
-		payload := api.QBAvailabilityPayload{
+		payload := api.CosoftAvailabilityPayload{
 			DateTime: qb.payload.DateTime,
 			NbPeople: qb.payload.NbPeople,
 			Duration: qb.payload.Duration,
@@ -292,7 +292,7 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 		}
 
 		payload := api.CosoftBookingPayload{
-			QBAvailabilityPayload: api.QBAvailabilityPayload{
+			CosoftAvailabilityPayload: api.CosoftAvailabilityPayload{
 				DateTime: qb.payload.DateTime,
 				NbPeople: qb.payload.NbPeople,
 				Duration: qb.payload.Duration,

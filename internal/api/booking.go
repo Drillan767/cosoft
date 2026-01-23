@@ -48,11 +48,15 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (*FutureBookingsResp
 	return &response, nil
 }
 
-func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QBAvailabilityPayload) ([]models.Room, error) {
+func (a *Api) GetAvailableRooms(
+	wAuth, wAuthRefresh string,
+	payload CosoftAvailabilityPayload,
+) ([]models.Room, error) {
 
 	req, err := a.prepareRoomAvailabilityRequest(payload)
 
 	if err != nil {
+		a.debug(fmt.Sprintf("Error line 59, %s", err.Error()))
 		return nil, err
 	}
 
@@ -64,6 +68,7 @@ func (a *Api) GetAvailableRooms(wAuth, wAuthRefresh string, payload QBAvailabili
 	resp, err := client.Do(req)
 
 	if err != nil {
+		a.debug(fmt.Sprintf("Error line 71, %s", err.Error()))
 		return nil, err
 	}
 
@@ -166,7 +171,7 @@ func (a *Api) CancelBooking(wAuth, wAuthRefresh, bookingId string) error {
 	return nil
 }
 
-func (a *Api) prepareRoomAvailabilityRequest(payload QBAvailabilityPayload) (*http.Request, error) {
+func (a *Api) prepareRoomAvailabilityRequest(payload CosoftAvailabilityPayload) (*http.Request, error) {
 	dtp := DateTimePayload{
 		Start: payload.DateTime.Format(time.RFC3339),
 		End:   payload.DateTime.Add(time.Duration(payload.Duration) * time.Minute).Format(time.RFC3339),
@@ -182,12 +187,14 @@ func (a *Api) prepareRoomAvailabilityRequest(payload QBAvailabilityPayload) (*ht
 	jsonDtp, err := json.Marshal(dtp)
 
 	if err != nil {
+		a.debug(fmt.Sprintf("Error line 190, %s", err.Error()))
 		return nil, err
 	}
 
 	jsonAbp, err := json.Marshal(abp)
 
 	if err != nil {
+		a.debug(fmt.Sprintf("Error line 197, %s", err.Error()))
 		return nil, err
 	}
 
@@ -196,6 +203,7 @@ func (a *Api) prepareRoomAvailabilityRequest(payload QBAvailabilityPayload) (*ht
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonAbp))
 
 	if err != nil {
+		a.debug(fmt.Sprintf("Error line 206, %s", err.Error()))
 		return nil, err
 	}
 
@@ -209,9 +217,9 @@ func (a *Api) prepareRoomAvailabilityRequest(payload QBAvailabilityPayload) (*ht
 
 func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http.Request, error) {
 
-	startTime := payload.QBAvailabilityPayload.DateTime
-	endTime := payload.QBAvailabilityPayload.
-		DateTime.Add(time.Duration(payload.QBAvailabilityPayload.Duration) * time.Minute)
+	startTime := payload.CosoftAvailabilityPayload.DateTime
+	endTime := payload.CosoftAvailabilityPayload.
+		DateTime.Add(time.Duration(payload.CosoftAvailabilityPayload.Duration) * time.Minute)
 
 	reservation := RoomBookingPayload{
 		IsUser:           true,

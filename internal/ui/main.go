@@ -4,6 +4,7 @@ import (
 	"cosoft-cli/internal/services"
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -42,4 +43,48 @@ func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 	_, err = p.Run()
 
 	return err
+}
+
+func validateDateIsFuture(s string) error {
+	if s == "" {
+		return fmt.Errorf("date is required")
+	}
+
+	date, err := time.Parse(time.DateOnly, s)
+
+	if err != nil {
+		return fmt.Errorf("date could not be parsed")
+	}
+
+	if time.Now().After(date) {
+		return fmt.Errorf("date is not in the future")
+	}
+
+	return nil
+}
+
+func validateHour(s string) error {
+	if s == "" {
+		return fmt.Errorf("hour is required")
+	}
+
+	h, err := time.Parse("15:04", s)
+
+	if err != nil {
+		return fmt.Errorf("could not parse time")
+	}
+
+	hours := h.Hour()
+
+	if hours < 8 || hours > 20 {
+		return fmt.Errorf("hours outside opening hours")
+	}
+
+	minutes := h.Minute()
+
+	if minutes%15 != 0 {
+		return fmt.Errorf("minutes not rounded to quarters")
+	}
+
+	return nil
 }

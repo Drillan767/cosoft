@@ -12,14 +12,14 @@ type LoginPayload struct {
 	Password string
 }
 
-type QBAvailabilityPayload struct {
+type CosoftAvailabilityPayload struct {
 	DateTime time.Time
 	Duration int
 	NbPeople int
 }
 
 type CosoftBookingPayload struct {
-	QBAvailabilityPayload
+	CosoftAvailabilityPayload
 	Room        models.Room
 	UserCredits float64
 }
@@ -30,6 +30,7 @@ type BrowsePayload struct {
 	StartHour string
 	EndDate   string
 	Duration  int
+	NbPeople  int
 }
 
 type PriceResponse struct {
