@@ -3,6 +3,7 @@ package services
 import (
 	"cosoft-cli/internal/storage"
 	"fmt"
+	"net/http"
 	"os"
 )
 
@@ -21,4 +22,8 @@ func NewService() (*Service, error) {
 	return &Service{
 		store: store,
 	}, nil
+}
+
+func (s *Service) prepareHeaderCookies() (*http.Request, error) {
+	return nil, nil
 }

@@ -3,6 +3,7 @@ package ui
 import (
 	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/services"
+	"time"
 
 	"cosoft-cli/shared/models"
 	"fmt"
@@ -21,6 +22,8 @@ type LandingModel struct {
 	calendar         string
 	nbFutureBookings int
 	loading          bool
+	loadingCalendar  bool
+	err              error
 }
 
 type futureBookingMsg struct {
@@ -37,6 +40,8 @@ type calendarMsg struct {
 	err      error
 }
 
+type startFetchingMsg struct{}
+
 func NewLandingModel() *LandingModel {
 	selection := &models.Selection{}
 
@@ -44,13 +49,18 @@ func NewLandingModel() *LandingModel {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 
+	cs := spinner.New()
+	cs.Spinner = spinner.Dot
+	cs.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+
 	m := &LandingModel{
 		selection:        selection,
 		spinner:          s,
 		loading:          true,
 		nbFutureBookings: 0,
 		calendar:         "",
-		calendarSpinner:  s,
+		calendarSpinner:  cs,
+		loadingCalendar:  true,
 	}
 
 	m.buildForm()
@@ -86,9 +96,12 @@ func (m *LandingModel) Init() tea.Cmd {
 		m.form.Init(),
 		m.spinner.Tick,
 		m.calendarSpinner.Tick,
-		m.fetchFutureBookings(),
-		m.getCalendarView(),
-		m.updateCredits(),
+		m.form.Init(),
+		m.spinner.Tick,
+		m.calendarSpinner.Tick,
+		func() tea.Msg {
+			return startFetchingMsg{}
+		},
 	)
 }
 
@@ -134,6 +147,13 @@ func (m *LandingModel) updateCredits() tea.Cmd {
 
 func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case startFetchingMsg:
+		return m, tea.Batch(
+			m.fetchFutureBookings(),
+			m.getCalendarView(),
+			m.updateCredits(),
+		)
+
 	case futureBookingMsg:
 		if msg.err != nil {
 			m.loading = false
@@ -145,6 +165,16 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.buildForm() // Rebuild form with updated data
 		return m, m.form.Init()
 
+	case calendarMsg:
+		m.loadingCalendar = false
+
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+
+		m.calendar = msg.calendar
+
 	case updatedCreditsMsg:
 		credits := fmt.Sprintf("Credits: %.02f", msg.credits)
 		return m, func() tea.Msg {
@@ -152,10 +182,10 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case spinner.TickMsg:
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		m.calendarSpinner, cmd = m.calendarSpinner.Update(msg)
-		return m, cmd
+		var cmd1, cmd2 tea.Cmd
+		m.spinner, cmd1 = m.spinner.Update(msg)
+		m.calendarSpinner, cmd2 = m.calendarSpinner.Update(msg)
+		return m, tea.Batch(cmd1, cmd2)
 	}
 
 	if m.loading {
@@ -178,13 +208,26 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *LandingModel) View() string {
+	// Calendar
+	var calendar string
+	var loadingCalendar string
+	// var loadingMenu string
+
+	if m.loadingCalendar {
+		loadingCalendar = fmt.Sprintf("%s Loading calendar informations...\n\n", m.calendarSpinner.View())
+	}
+
+	if m.calendar != "" {
+		calendar = m.calendar + "\n\n"
+	}
+
 	if m.loading {
-		return fmt.Sprintf("\n %s Loading...\n", m.spinner.View())
+		return loadingCalendar + fmt.Sprintf("\n %s Loading...\n", m.spinner.View())
 	}
 	if m.form == nil {
 		return "Error: form is nil"
 	}
-	return m.form.View()
+	return loadingCalendar + calendar + m.form.View()
 }
 
 func (m *LandingModel) GetSelection() *models.Selection {
@@ -199,28 +242,36 @@ func (m *LandingModel) getCalendarView() tea.Cmd {
 			return calendarMsg{err: err}
 		}
 
-		user, err := authService.GetAuthData()
-
-		if err != nil {
-			return calendarMsg{err: err}
-		}
-
 		err = authService.EnsureRoomsStored()
 
 		if err != nil {
 			return calendarMsg{err: err}
 		}
 
-		return nil
+		now := time.Now()
+		date := time.Date(
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			0,
+			0,
+			0,
+			0,
+			now.Location(),
+		)
+
+		usage, err := authService.GetRoomAvailabilities(date)
+
+		if err != nil {
+			return calendarMsg{err: err}
+		}
+
+		calendar := ""
+
+		for _, u := range usage {
+			calendar = fmt.Sprintf("%s\n %s: ", m.calendar, u.Name)
+		}
+
+		return calendarMsg{calendar: calendar}
 	}
 }
-
-/*
-func (m *LandingModel) CalendarView(sel *models.Selection) string {
-
-	// url /CoworkingSpace/[spaceId]/category/[categoryId]/[roomId]/busytimes
-
-	title := "Cosoft - Today (25/01/2026"
-
-}
-*/

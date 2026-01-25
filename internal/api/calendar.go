@@ -5,6 +5,7 @@ import (
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 )
@@ -16,9 +17,12 @@ func (a *Api) GetRoomBusyTime(
 ) (*[]models.UnavailableSlot, error) {
 
 	type filter struct {
-		startDate time.Time `json:"startDate"`
-		endDate   time.Time `json:"endDate"`
+		StartDate time.Time `json:"startDate"`
+		EndDate   time.Time `json:"endDate"`
 	}
+
+	a.debug(date.Format(time.RFC3339))
+	a.debug(roomId)
 
 	endDate := time.Date(
 		date.Year(),
@@ -31,13 +35,14 @@ func (a *Api) GetRoomBusyTime(
 		time.UTC,
 	)
 	payload := filter{
-		startDate: date,
-		endDate:   endDate,
+		StartDate: date,
+		EndDate:   endDate,
 	}
 
 	jsonPayload, err := json.Marshal(payload)
 
 	if err != nil {
+		a.debug("failed to marshal payload")
 		return nil, err
 	}
 
@@ -46,6 +51,7 @@ func (a *Api) GetRoomBusyTime(
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))
 
 	if err != nil {
+		a.debug("failed to create request")
 		return nil, err
 	}
 
@@ -57,7 +63,23 @@ func (a *Api) GetRoomBusyTime(
 	resp, err := client.Do(req)
 
 	if err != nil {
+		a.debug("failed to do request")
 		return nil, err
 	}
 
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	a.debug(string(data))
+
+	var slots []models.UnavailableSlot
+	if err := json.Unmarshal(data, &slots); err != nil {
+		a.debug("failed to unmarshal response: " + err.Error())
+		return nil, err
+	}
+
+	return &slots, nil
 }

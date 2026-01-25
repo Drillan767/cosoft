@@ -39,7 +39,7 @@ func (s *Service) EnsureRoomsStored() error {
 	return s.store.CreateRooms(apiRooms)
 }
 
-func (s *Service) GetRoomAvailabilities(date time.Time) (*models.RoomUsage, error) {
+func (s *Service) GetRoomAvailabilities(date time.Time) ([]models.RoomUsage, error) {
 	rooms, err := s.store.GetRooms()
 
 	if err != nil {
@@ -54,34 +54,34 @@ func (s *Service) GetRoomAvailabilities(date time.Time) (*models.RoomUsage, erro
 
 	apiClient := api.NewApi()
 
-	results := make([]storage.Room, len(rooms))
+	results := make([]models.RoomUsage, len(rooms))
 	var wg sync.WaitGroup
-
-	/*
-			 for i, room := range rooms {
-			  wg.Add(1)
-			  go func(idx int, r Room) {
-				  defer wg.Done()
-				  results[idx] = fetchBusyTimes(r) // each goroutine writes to its own index
-			  }(i, room)
-		  }
-		  wg.Wait()
-	*/
 
 	for i, room := range rooms {
 		wg.Add(1)
 		go func(i int, room storage.Room) {
 			defer wg.Done()
-			results[i] = apiClient.GetAllAvailabilities(
+			response, err := apiClient.GetRoomBusyTime(
 				authData.WAuth,
 				authData.WAuthRefresh,
 				room.Id,
 				date,
 			)
+
+			result := models.RoomUsage{
+				Id:   room.Id,
+				Name: room.Name,
+			}
+
+			if err == nil && response != nil {
+				result.UsedSlots = *response
+			}
+
+			results[i] = result
 		}(i, room)
 	}
 
 	wg.Wait()
 
-	return nil, nil
+	return results, nil
 }
