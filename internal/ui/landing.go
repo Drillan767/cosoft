@@ -221,6 +221,10 @@ func (m *LandingModel) View() string {
 		calendar = m.calendar + "\n\n"
 	}
 
+	if m.err != nil {
+		return fmt.Sprintf("Error: %s\nPress q to quit", m.err.Error())
+	}
+
 	if m.loading {
 		return loadingCalendar + fmt.Sprintf("\n %s Loading...\n", m.spinner.View())
 	}
@@ -269,7 +273,7 @@ func (m *LandingModel) getCalendarView() tea.Cmd {
 		calendar := ""
 
 		for _, u := range usage {
-			calendar = fmt.Sprintf("%s\n %s: ", m.calendar, u.Name)
+			calendar = fmt.Sprintf("%s\n %s: ", calendar, u.Name)
 		}
 
 		return calendarMsg{calendar: calendar}

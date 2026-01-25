@@ -4,6 +4,8 @@ import (
 	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
+	"fmt"
+	"os"
 	"sync"
 	"time"
 )
@@ -74,7 +76,14 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]models.RoomUsage, err
 			}
 
 			if err == nil && response != nil {
+				debug(fmt.Sprintf("Got response for %s", room.Name))
 				result.UsedSlots = *response
+			} else {
+				if err != nil {
+					debug(fmt.Sprintf("Error for %s: %s", room.Name, err.Error()))
+				} else {
+					debug(fmt.Sprintf("Nil response for %s", room.Name))
+				}
 			}
 
 			results[i] = result
@@ -82,6 +91,13 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]models.RoomUsage, err
 	}
 
 	wg.Wait()
+	debug("Finished all room checks")
 
 	return results, nil
+}
+
+func debug(text string) {
+	file, _ := os.OpenFile("debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer file.Close()
+	file.WriteString(fmt.Sprintf("%s: %s \n\n", time.Now().Format(time.RFC3339), text))
 }
