@@ -120,3 +120,9 @@ type FutureBookingsResponse struct {
 type CancellationPayload struct {
 	Id string `json:"Id"`
 }
+
+type BusyTimeResponse struct {
+	Title string `json:"title"`
+	Start string `json:"start"`
+	End   string `json:"end"`
+}

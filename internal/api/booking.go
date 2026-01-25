@@ -48,6 +48,55 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (*FutureBookingsResp
 	return &response, nil
 }
 
+func (a *Api) GetAllRooms(wAuth, wAuthRefresh string) ([]models.Room, error) {
+	type payload struct {
+		Price any `json:"price"`
+	}
+
+	price := &payload{Price: nil}
+
+	p, err := json.Marshal(price)
+
+	// Payload of type {"price": null} is still required without any filter
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := fmt.Sprintf("%s/CoworkingSpace/%s/category/%s/items", apiUrl, spaceId, categoryId)
+	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(p))
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	response := AvailableRoomsResponse{}
+
+	if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	rooms, err := a.getRoomsInfoFromResponse(response)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rooms, nil
+}
+
 func (a *Api) GetAvailableRooms(
 	wAuth, wAuthRefresh string,
 	payload CosoftAvailabilityPayload,
@@ -80,39 +129,10 @@ func (a *Api) GetAvailableRooms(
 		return nil, err
 	}
 
-	rooms := make([]models.Room, 0, len(response.UnvisitedItems)+len(response.VisitedItems))
-	for _, room := range response.VisitedItems {
+	rooms, err := a.getRoomsInfoFromResponse(response)
 
-		// Filter out Hubmit and Clhub
-		if room.NbUsers > 10 {
-			continue
-		}
-
-		mr := models.Room{
-			Id:      room.Id,
-			Name:    room.Name,
-			NbUsers: room.NbUsers,
-			Price:   room.Prices[0].Credits,
-		}
-
-		rooms = append(rooms, mr)
-	}
-
-	for _, room := range response.UnvisitedItems {
-
-		// Filter out Hubmit and Clhub
-		if room.NbUsers > 10 {
-			continue
-		}
-
-		mr := models.Room{
-			Id:      room.Id,
-			Name:    room.Name,
-			NbUsers: room.NbUsers,
-			Price:   room.Prices[0].Credits,
-		}
-
-		rooms = append(rooms, mr)
+	if err != nil {
+		return nil, err
 	}
 
 	return rooms, nil
@@ -216,7 +236,6 @@ func (a *Api) prepareRoomAvailabilityRequest(payload CosoftAvailabilityPayload) 
 }
 
 func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http.Request, error) {
-
 	startTime := payload.CosoftAvailabilityPayload.DateTime
 	endTime := payload.CosoftAvailabilityPayload.
 		DateTime.Add(time.Duration(payload.CosoftAvailabilityPayload.Duration) * time.Minute)
@@ -271,6 +290,46 @@ func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http
 	}
 
 	return req, nil
+
+}
+
+func (a *Api) getRoomsInfoFromResponse(response AvailableRoomsResponse) ([]models.Room, error) {
+	rooms := make([]models.Room, 0, len(response.UnvisitedItems)+len(response.VisitedItems))
+	for _, room := range response.VisitedItems {
+
+		// Filter out Hubmit and Clhub
+		if room.NbUsers > 10 {
+			continue
+		}
+
+		mr := models.Room{
+			Id:      room.Id,
+			Name:    room.Name,
+			NbUsers: room.NbUsers,
+			Price:   room.Prices[0].Credits,
+		}
+
+		rooms = append(rooms, mr)
+	}
+
+	for _, room := range response.UnvisitedItems {
+
+		// Filter out Hubmit and Clhub
+		if room.NbUsers > 10 {
+			continue
+		}
+
+		mr := models.Room{
+			Id:      room.Id,
+			Name:    room.Name,
+			NbUsers: room.NbUsers,
+			Price:   room.Prices[0].Credits,
+		}
+
+		rooms = append(rooms, mr)
+	}
+
+	return rooms, nil
 
 }
 

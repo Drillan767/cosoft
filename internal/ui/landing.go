@@ -17,6 +17,8 @@ type LandingModel struct {
 	form             *huh.Form
 	selection        *models.Selection
 	spinner          spinner.Model
+	calendarSpinner  spinner.Model
+	calendar         string
 	nbFutureBookings int
 	loading          bool
 }
@@ -28,6 +30,11 @@ type futureBookingMsg struct {
 
 type updatedCreditsMsg struct {
 	credits float64
+}
+
+type calendarMsg struct {
+	calendar string
+	err      error
 }
 
 func NewLandingModel() *LandingModel {
@@ -42,6 +49,8 @@ func NewLandingModel() *LandingModel {
 		spinner:          s,
 		loading:          true,
 		nbFutureBookings: 0,
+		calendar:         "",
+		calendarSpinner:  s,
 	}
 
 	m.buildForm()
@@ -76,7 +85,9 @@ func (m *LandingModel) Init() tea.Cmd {
 	return tea.Batch(
 		m.form.Init(),
 		m.spinner.Tick,
+		m.calendarSpinner.Tick,
 		m.fetchFutureBookings(),
+		m.getCalendarView(),
 		m.updateCredits(),
 	)
 }
@@ -143,6 +154,7 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
+		m.calendarSpinner, cmd = m.calendarSpinner.Update(msg)
 		return m, cmd
 	}
 
@@ -178,3 +190,37 @@ func (m *LandingModel) View() string {
 func (m *LandingModel) GetSelection() *models.Selection {
 	return m.selection
 }
+
+func (m *LandingModel) getCalendarView() tea.Cmd {
+	return func() tea.Msg {
+		authService, err := services.NewService()
+
+		if err != nil {
+			return calendarMsg{err: err}
+		}
+
+		user, err := authService.GetAuthData()
+
+		if err != nil {
+			return calendarMsg{err: err}
+		}
+
+		err = authService.EnsureRoomsStored()
+
+		if err != nil {
+			return calendarMsg{err: err}
+		}
+
+		return nil
+	}
+}
+
+/*
+func (m *LandingModel) CalendarView(sel *models.Selection) string {
+
+	// url /CoworkingSpace/[spaceId]/category/[categoryId]/[roomId]/busytimes
+
+	title := "Cosoft - Today (25/01/2026"
+
+}
+*/

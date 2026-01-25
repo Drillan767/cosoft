@@ -2,6 +2,7 @@ package storage
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/shared/models"
 	"database/sql"
 	"errors"
 	"time"
@@ -217,6 +218,39 @@ func (s *Store) UpdateCredits() (*float64, error) {
 	return &newCredits, nil
 }
 
-// List reservations (parameter: paste / future)
-// Store reservation
-// Remove (cancel) reservation
+func (s *Store) GetRooms() ([]Room, error) {
+	var rooms []Room
+	query := `SELECT * FROM rooms;`
+
+	rows, err := s.db.Query(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var room Room
+		if err := rows.Scan(&room.Id, &room.Name, &room.MaxUsers, &room.Price, &room.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		rooms = append(rooms, room)
+	}
+
+	return rooms, nil
+}
+
+func (s *Store) CreateRooms(rooms []models.Room) error {
+	query := `INSERT INTO rooms (name, max_users, price, created_at) VALUES (?, ?, ?, ?)`
+	for _, room := range rooms {
+		_, err := s.db.Exec(query, room.Name, room.NbUsers, room.Price, time.Now())
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

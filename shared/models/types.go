@@ -1,6 +1,10 @@
 package models
 
-import "github.com/charmbracelet/bubbles/spinner"
+import (
+	"time"
+
+	"github.com/charmbracelet/bubbles/spinner"
+)
 
 type GlobalState struct {
 	currentPage string
@@ -18,4 +22,15 @@ type Room struct {
 	Name    string
 	NbUsers int
 	Price   float64
+}
+
+type UnavailableSlot struct {
+	StartDate time.Time
+	EndDate   time.Time
+}
+
+type RoomUsage struct {
+	Name      string
+	Id        string
+	UsedSlots []UnavailableSlot
 }
