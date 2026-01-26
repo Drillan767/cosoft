@@ -122,7 +122,8 @@ type CancellationPayload struct {
 }
 
 type BusyTimeResponse struct {
-	Title string `json:"title"`
-	Start string `json:"start"`
-	End   string `json:"end"`
+	Data    []models.UnavailableSlot `json:"data"`
+	Error   string                   `json:"Error"`
+	Message string                   `json:"Message"`
+	Fields  string                   `json:"Fields"`
 }

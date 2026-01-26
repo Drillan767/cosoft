@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"github.com/charmbracelet/bubbles/spinner"
 )
 
@@ -25,8 +23,9 @@ type Room struct {
 }
 
 type UnavailableSlot struct {
-	StartDate time.Time
-	EndDate   time.Time
+	Title string `json:"Title"`
+	Start string `json:"Start"`
+	End   string `json:"End"`
 }
 
 type RoomUsage struct {

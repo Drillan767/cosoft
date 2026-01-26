@@ -75,11 +75,11 @@ func (a *Api) GetRoomBusyTime(
 	}
 	a.debug(string(data))
 
-	var slots []models.UnavailableSlot
-	if err := json.Unmarshal(data, &slots); err != nil {
+	var response BusyTimeResponse
+	if err := json.Unmarshal(data, &response); err != nil {
 		a.debug("failed to unmarshal response: " + err.Error())
 		return nil, err
 	}
 
-	return &slots, nil
+	return &response.Data, nil
 }
