@@ -77,32 +77,15 @@ func renderSlot(slot TimeSlot) string {
         return "     "
     }
 }
-
-// Parallel fetch
-func fetchAllBusyTimes(rooms []Room, date time.Time) (map[string][]BusyTime, error) {
-    var wg sync.WaitGroup
-    results := make(map[string][]BusyTime)
-    var mu sync.Mutex
-
-    for _, room := range rooms {
-        wg.Add(1)
-        go func(r Room) {
-            defer wg.Done()
-            busyTimes, err := api.GetBusyTimes(r.ID, date)
-            if err != nil {
-                log.Warn("Failed to fetch busy times for", r.Name)
-                return
-            }
-            mu.Lock()
-            results[r.ID] = busyTimes
-            mu.Unlock()
-        }(room)
-    }
-
-    wg.Wait()
-    return results, nil
-}
 ```
+### Generate a calendar row
+
+1. Each █ represents a 15mn span, so an hour is ████ (when a reservation exists, otherwise it's just a blank space)
+2. Each hour is separated by a pipe `│`
+3. Display the current time with a red `│`. All row should have the red pipe at the same place
+4. Don't forget to add a prefix based on the longest meeting room name - current room name, so all rows are aligned
+5. 
+
 
 ## Book first available room
 
