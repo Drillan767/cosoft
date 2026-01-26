@@ -6,6 +6,7 @@ import (
 	"cosoft-cli/shared/models"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -41,7 +42,7 @@ func (s *Service) EnsureRoomsStored() error {
 	return s.store.CreateRooms(apiRooms)
 }
 
-func (s *Service) GetRoomAvailabilities(date time.Time) ([]models.RoomUsage, error) {
+func (s *Service) GetRoomAvailabilities(date time.Time) ([]string, error) {
 	rooms, err := s.store.GetRooms()
 
 	if err != nil {
@@ -91,9 +92,44 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]models.RoomUsage, err
 	}
 
 	wg.Wait()
-	debug("Finished all room checks")
 
-	return results, nil
+	maxLabelLength := 0
+
+	for _, room := range results {
+		if len(room.Name)+1 > maxLabelLength {
+			maxLabelLength = len(room.Name) + 1
+		}
+	}
+
+	rows := make([]string, len(results)+1)
+
+	rows[0] = s.createTableHeader(maxLabelLength)
+
+	for i, room := range results {
+		rows[i+1] = s.createTableRow(room, maxLabelLength)
+	}
+
+	return rows, nil
+}
+
+func (s *Service) createTableHeader(labelLength int) string {
+	spacing := 2
+	displayedHours := 16
+	result := ""
+
+	for i := 0; i < displayedHours; i++ {
+		if i+8 < 10 {
+			result += "0"
+		}
+		result += fmt.Sprintf("%dh%s", i+8, strings.Repeat(" ", spacing))
+	}
+
+	return strings.Repeat(" ", labelLength-1) + result
+}
+
+func (s *Service) createTableRow(row models.RoomUsage, labelLength int) string {
+	spacing := labelLength - len(row.Name)
+	return row.Name + strings.Repeat(" ", spacing) + "│"
 }
 
 func debug(text string) {

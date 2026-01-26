@@ -11,7 +11,7 @@
     - Settings
     - Quit
 
-### Calendar view
+### Calendar view
 
 1. Fetch all rooms (from cache)
 2. Fetch YOUR bookings for today
@@ -22,11 +22,11 @@
 ```
 CoSoft - Today (Friday, Jan 10)
 
-           08:00   09:00   10:00   11:00   12:00   13:00   14:00   15:00   16:00   17:00   18:00   19:00
-  CALL BOX 1  │     │█████│█████│     │·····│·····│     │     │     │     │     │     │
-  CALL BOX 2  │     │     │=====│=====│·····│·····│=====│=====│     │     │     │     │
-  CALL BOX 3  │█████│█████│     │     │·····│·····│     │     │█████│     │     │     │
-  CALL BOX 5  │     │     │     │=====│·····│·····│     │     │     │     │     │     │
+             08h  09h   10:00   11:00   12:00   13:00   14:00   15:00   16:00   17:00   18:00   19:00
+  CALL BOX 1  │    │█████│█████│     │·····│·····│     │     │     │     │     │     │
+  CALL BOX 2  │    │     │=====│=====│·····│·····│=====│=====│     │     │     │     │
+  CALL BOX 3  │████│█████│     │     │·····│·····│     │     │█████│     │     │     │
+  CALL BOX 5  │    │     │     │=====│·····│·····│     │     │     │     │     │     │
 ```
 
 Color/Pattern scheme:
@@ -156,6 +156,7 @@ HUB612 staff members have expressed their desire to be able to book a room throu
 ## Structure
 
 ```golang
+
 type User struct {
     Id string
     FirstName string

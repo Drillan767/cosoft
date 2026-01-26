@@ -273,7 +273,7 @@ func (m *LandingModel) getCalendarView() tea.Cmd {
 		calendar := ""
 
 		for _, u := range usage {
-			calendar = fmt.Sprintf("%s\n %s: ", calendar, u.Name)
+			calendar = fmt.Sprintf("%s\n %s ", calendar, u)
 		}
 
 		return calendarMsg{calendar: calendar}
