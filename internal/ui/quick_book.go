@@ -272,8 +272,6 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 			return bookingFailedMsg{err: err}
 		}
 
-		savedCredits := float64(user.Credits) / float64(100)
-
 		var pickedRoom *models.Room
 
 		for _, room := range qb.rooms {
@@ -287,7 +285,7 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 			return bookingFailedMsg{err: fmt.Errorf("No room suiting user's selection, aborting")}
 		}
 
-		if savedCredits < pickedRoom.Price {
+		if user.Credits < pickedRoom.Price {
 			return bookingFailedMsg{err: fmt.Errorf("Not enough credits to perfor, the booking, aborting")}
 		}
 
@@ -297,7 +295,7 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 				NbPeople: qb.payload.NbPeople,
 				Duration: qb.payload.Duration,
 			},
-			UserCredits: savedCredits,
+			UserCredits: user.Credits,
 			Room:        *pickedRoom,
 		}
 

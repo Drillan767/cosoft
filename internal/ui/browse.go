@@ -244,8 +244,6 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 			return bookingFailedMsg{err: err}
 		}
 
-		savedCredits := float64(user.Credits) / float64(100)
-
 		var pickedRoom *models.Room
 
 		for _, room := range b.rooms {
@@ -259,7 +257,7 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 			return bookingFailedMsg{err: fmt.Errorf("no room suiting user's selection, aborting")}
 		}
 
-		if savedCredits < pickedRoom.Price {
+		if user.Credits < pickedRoom.Price {
 			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perfor, the booking, aborting")}
 		}
 
@@ -271,7 +269,7 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 				NbPeople: b.browsePayload.NbPeople,
 				Duration: b.browsePayload.Duration,
 			},
-			UserCredits: savedCredits,
+			UserCredits: user.Credits,
 			Room:        *pickedRoom,
 		}
 

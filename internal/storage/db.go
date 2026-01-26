@@ -37,7 +37,7 @@ func (s *Store) SetupDatabase(dbPath string) error {
 			first_name VARCHAR(50) NOT NULL,
 			last_name VARCHAR(50) NOT NULL,
 			email VARCHAR(50) UNIQUE NOT NULL,
-			credits SMALLINT NOT NULL DEFAULT 0,
+			credits REAL NOT NULL DEFAULT 0,
 			w_auth TEXT NOT NULL,
 			w_auth_refresh TEXT NOT NULL,
 			slack_user_id VARCHAR(50),
@@ -120,7 +120,7 @@ func (s *Store) SetUser(user *api.UserResponse, wAuth, wAuthRefresh string) erro
 			user.Email,
 			user.FirstName,
 			user.LastName,
-			user.Credits*100,
+			user.Credits,
 			wAuth,
 			wAuthRefresh,
 			nil,
@@ -205,15 +205,13 @@ func (s *Store) UpdateCredits() (*float64, error) {
 		return nil, err
 	}
 
-	savedCredits := uc.Credits / float64(100)
-
-	if savedCredits == newCredits {
+	if newCredits == uc.Credits {
 		return nil, nil
 	}
 
 	query = `UPDATE users SET credits = ? WHERE id = ?`
 
-	_, err = s.db.Exec(query, newCredits*100, uc.Id)
+	_, err = s.db.Exec(query, newCredits, uc.Id)
 
 	return &newCredits, nil
 }

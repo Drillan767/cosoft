@@ -7,22 +7,22 @@ import (
 )
 
 type User struct {
-	Id             uuid.UUID `db:"id"`
-	FirstName      string    `db:"first_name"`
-	LastName       string    `db:"last_name"`
-	Email          string    `db:"email"`
-	WAuth          string    `db:"w_auth"`
-	WAuthRefresh   string    `db:"w_auth_refresh"`
-	Credits        int       `db:"credits"`
-	SlackUserID    *string   `db:"slack_user_id"`
-	CreatedAt      time.Time `db:"created_at"`
+	Id           uuid.UUID `db:"id"`
+	FirstName    string    `db:"first_name"`
+	LastName     string    `db:"last_name"`
+	Email        string    `db:"email"`
+	WAuth        string    `db:"w_auth"`
+	WAuthRefresh string    `db:"w_auth_refresh"`
+	Credits      float64   `db:"credits"`
+	SlackUserID  *string   `db:"slack_user_id"`
+	CreatedAt    time.Time `db:"created_at"`
 }
 
 type Room struct {
 	Id        string    `db:"id"`
 	Name      string    `db:"name"`
 	MaxUsers  int       `db:"max_users"`
-	Price     int       `db:"price"`
+	Price     float64   `db:"price"`
 	CreatedAt time.Time `db:"created_at"`
 }
 

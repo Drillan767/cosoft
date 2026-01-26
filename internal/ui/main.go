@@ -31,9 +31,8 @@ func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 	}
 
 	if user, err := authService.GetAuthData(); err == nil {
-		credits := float32(user.Credits) / float32(100)
 		config.Header.Right = fmt.Sprintf("%s %s (%s)", user.FirstName, user.LastName, user.Email)
-		config.Header.Credits = fmt.Sprintf("Credits: %.02f", credits)
+		config.Header.Credits = fmt.Sprintf("Credits: %.02f", user.Credits)
 	}
 
 	layout := NewLayout(appModel, config)
