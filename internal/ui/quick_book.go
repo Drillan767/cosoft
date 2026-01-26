@@ -31,7 +31,6 @@ type QuickBookModel struct {
 	err        error
 }
 
-type bookingProcessStart struct{}
 type roomFetchedMsg struct {
 	availableRooms []models.Room
 }
