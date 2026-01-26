@@ -94,6 +94,7 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]string, error) {
 	wg.Wait()
 
 	maxLabelLength := 0
+	displayedHours := 16
 
 	for _, room := range results {
 		if len(room.Name)+1 > maxLabelLength {
@@ -103,18 +104,17 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]string, error) {
 
 	rows := make([]string, len(results)+1)
 
-	rows[0] = s.createTableHeader(maxLabelLength)
+	rows[0] = s.createTableHeader(maxLabelLength, displayedHours)
 
 	for i, room := range results {
-		rows[i+1] = s.createTableRow(room, maxLabelLength)
+		rows[i+1] = s.createTableRow(room, maxLabelLength, displayedHours)
 	}
 
 	return rows, nil
 }
 
-func (s *Service) createTableHeader(labelLength int) string {
+func (s *Service) createTableHeader(labelLength, displayedHours int) string {
 	spacing := 2
-	displayedHours := 16
 	result := ""
 
 	for i := 0; i < displayedHours; i++ {
@@ -127,9 +127,15 @@ func (s *Service) createTableHeader(labelLength int) string {
 	return strings.Repeat(" ", labelLength-1) + result
 }
 
-func (s *Service) createTableRow(row models.RoomUsage, labelLength int) string {
+func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHours int) string {
 	spacing := labelLength - len(row.Name)
-	return row.Name + strings.Repeat(" ", spacing) + "│"
+	columns := ""
+
+	for i := 0; i < displayedHours-1; i++ {
+		columns += strings.Repeat("█", 4) + "│"
+	}
+
+	return row.Name + strings.Repeat(" ", spacing) + "│" + columns
 }
 
 func debug(text string) {
