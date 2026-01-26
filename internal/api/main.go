@@ -1,5 +1,11 @@
 package api
 
+import (
+	"fmt"
+	"io"
+	"net/http"
+)
+
 type Api struct{}
 
 var (
@@ -10,4 +16,23 @@ var (
 
 func NewApi() *Api {
 	return &Api{}
+}
+
+func (a *Api) prepareHeaderCookies(
+	wAuth, wAuthRefresh, method, endpoint string,
+	payload io.Reader,
+) (*http.Request, *http.Client, error) {
+	req, err := http.NewRequest(method, endpoint, payload)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	client := &http.Client{}
+
+	// A token and a refresh token need to be added in the request's header to make an authenticated request.
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
+
+	return req, client, nil
 }

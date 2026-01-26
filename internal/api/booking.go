@@ -16,20 +16,17 @@ import (
 
 func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (*FutureBookingsResponse, error) {
 
-	req, err := http.NewRequest(
+	req, client, err := a.prepareHeaderCookies(
+		wAuth,
+		wAuthRefresh,
 		"GET",
-		apiUrl+"/Reservations/get-current-and-incoming?PerPage=5&Page=1",
+		fmt.Sprintf("%s/get-current-and-incoming?PerPage=5&Page=1", apiUrl),
 		nil,
 	)
 
 	if err != nil {
 		return nil, err
 	}
-
-	client := &http.Client{}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
 
 	resp, err := client.Do(req)
 
@@ -62,17 +59,17 @@ func (a *Api) GetAllRooms(wAuth, wAuthRefresh string) ([]models.Room, error) {
 		return nil, err
 	}
 
-	endpoint := fmt.Sprintf("%s/CoworkingSpace/%s/category/%s/items", apiUrl, spaceId, categoryId)
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(p))
+	req, client, err := a.prepareHeaderCookies(
+		wAuth,
+		wAuthRefresh,
+		"POST",
+		fmt.Sprintf("%s/CoworkingSpace/%s/category/%s/items", apiUrl, spaceId, categoryId),
+		bytes.NewBuffer(p),
+	)
 
 	if err != nil {
 		return nil, err
 	}
-
-	client := &http.Client{}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
 
 	resp, err := client.Do(req)
 
@@ -105,7 +102,6 @@ func (a *Api) GetAvailableRooms(
 	req, err := a.prepareRoomAvailabilityRequest(payload)
 
 	if err != nil {
-		a.debug(fmt.Sprintf("Error line 59, %s", err.Error()))
 		return nil, err
 	}
 
@@ -170,17 +166,17 @@ func (a *Api) CancelBooking(wAuth, wAuthRefresh, bookingId string) error {
 		return err
 	}
 
-	endpoint := fmt.Sprintf("%s/Reservation/cancel-order", apiUrl)
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))
+	req, client, err := a.prepareHeaderCookies(
+		wAuth,
+		wAuthRefresh,
+		"POST",
+		fmt.Sprintf("%s/Reservation/cancel-order", apiUrl),
+		bytes.NewBuffer(jsonPayload),
+	)
 
 	if err != nil {
 		return err
 	}
-
-	client := &http.Client{}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
 
 	_, err = client.Do(req)
 
@@ -241,18 +237,23 @@ func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http
 		DateTime.Add(time.Duration(payload.CosoftAvailabilityPayload.Duration) * time.Minute)
 
 	reservation := RoomBookingPayload{
+		// Required fields the user needs to validate on the actual website.
 		IsUser:           true,
 		IsPerson:         true,
 		IsVatRequired:    true,
 		IsStatusRequired: true,
 		CGV:              true,
-		PaymentType:      "credit",
+		// Multiple payment options possible, we'll keep at "credits".
+		PaymentType: "credit",
 		Cart: []RoomBookingCartPayload{
 			{
 				CoworkingSpaceId: spaceId,
 				CategoryId:       categoryId,
 				ItemId:           payload.Room.Id,
-				CartId:           randomStringGenerator(10),
+				// A "cart" instance seems to be created in the frontend,
+				// Probably to store it in the localStorage.
+				CartId: randomStringGenerator(10),
+				// The date time payload needs to be sent TWICE.
 				DateTimeAlt: DateTimeAlt{
 					Date: time.Now().Format(time.RFC3339),
 					Times: []DateTimePayload{
@@ -262,12 +263,15 @@ func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http
 						},
 					},
 				},
+				// But their structure isn't the same, nor is its data.
 				DateTime: []DateTime{
 					{
-						Type:       "hour",
-						Start:      startTime.Format(time.RFC3339),
-						End:        endTime.Format(time.RFC3339),
-						Id:         uuid.New(),
+						Type:  "hour",
+						Start: startTime.Format(time.RFC3339),
+						End:   endTime.Format(time.RFC3339),
+						// The selected time seems to also have its own instance.
+						Id: uuid.New(),
+						// Key is required, not the value.
 						TimeSlotId: nil,
 					},
 				},
