@@ -245,7 +245,7 @@ func (s *Store) GetRooms() ([]Room, error) {
 func (s *Store) CreateRooms(rooms []models.Room) error {
 	query := `INSERT INTO rooms (id, name, nb_users, price, created_at) VALUES (?, ?, ?, ?, ?)`
 	for _, room := range rooms {
-		_, err := s.db.Exec(query, room.Id, room.Name, room.NbUsers, room.Price, time.Now())
+		_, err := s.db.Exec(query, room.Id, room.Name, room.NbUsers, room.Price*100, time.Now())
 
 		if err != nil {
 			return err
