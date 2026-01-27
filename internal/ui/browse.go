@@ -29,7 +29,10 @@ type BrowseModel struct {
 }
 
 func NewBrowseModel() *BrowseModel {
-	browsePayload := &api.BrowsePayload{}
+	browsePayload := &api.BrowsePayload{
+		StartDate: time.Now().Format(time.DateOnly),
+		StartHour: roundHourToQuarter(time.Now()).Format(timeOnlyFormat),
+	}
 	bookPayload := &api.CosoftBookingPayload{}
 
 	s := spinner.New()
@@ -55,7 +58,7 @@ func NewBrowseModel() *BrowseModel {
 				Title("Reservation date").
 				Description("Pick a date in the future, format yyyy-mm-dd").
 				Validate(validateDateIsFuture).
-				Value(&browsePayload.StarDate),
+				Value(&browsePayload.StartDate),
 			huh.NewInput().
 				Title("Reservation hour").
 				Description("The hour needs to be rounded to the quarter (ex: 9:15, 10:30, etc)").
@@ -68,7 +71,7 @@ func NewBrowseModel() *BrowseModel {
 					huh.NewOption("1 hour", 60),
 				).
 				Value(&browsePayload.Duration),
-			components.NewListField[int](peoples, "For how many people?").
+			components.NewListField(peoples, "For how many people?").
 				Value(&browsePayload.NbPeople),
 		),
 	)
@@ -84,6 +87,8 @@ func NewBrowseModel() *BrowseModel {
 }
 
 func (b *BrowseModel) Init() tea.Cmd {
+	b.browsePayload.StartDate = time.Now().Format(time.DateOnly)
+	b.browsePayload.StartHour = roundHourToQuarter(time.Now()).Format(timeOnlyFormat)
 	return b.searchForm.Init()
 }
 
@@ -184,7 +189,7 @@ func (b *BrowseModel) getRoomsAvailability() tea.Cmd {
 
 		apiClient := api.NewApi()
 
-		dt := b.getStartTime(b.browsePayload.StarDate, b.browsePayload.StartHour)
+		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
 
 		payload := api.CosoftAvailabilityPayload{
 			DateTime: dt,
@@ -261,7 +266,7 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perfor, the booking, aborting")}
 		}
 
-		dt := b.getStartTime(b.browsePayload.StarDate, b.browsePayload.StartHour)
+		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
 
 		payload := api.CosoftBookingPayload{
 			CosoftAvailabilityPayload: api.CosoftAvailabilityPayload{
@@ -301,7 +306,7 @@ func (b *BrowseModel) generateTable() string {
 		}).
 		Headers("ROOM", "DURATION", "COST")
 
-	dt := b.getStartTime(b.browsePayload.StarDate, b.browsePayload.StartHour)
+	dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
 
 	endTime := dt.Add(time.Duration(b.browsePayload.Duration) * time.Minute)
 	dateFormat := "02/01/2006 15:04"

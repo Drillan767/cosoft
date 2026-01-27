@@ -26,7 +26,7 @@ type CosoftBookingPayload struct {
 
 type BrowsePayload struct {
 	Room      uint
-	StarDate  string
+	StartDate string
 	StartHour string
 	EndDate   string
 	Duration  int
