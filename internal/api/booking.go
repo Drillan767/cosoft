@@ -20,7 +20,7 @@ func (a *Api) GetFutureBookings(wAuth, wAuthRefresh string) (*FutureBookingsResp
 		wAuth,
 		wAuthRefresh,
 		"GET",
-		fmt.Sprintf("%s/get-current-and-incoming?PerPage=5&Page=1", apiUrl),
+		fmt.Sprintf("%s/Reservations/get-current-and-incoming?PerPage=5&Page=1", apiUrl),
 		nil,
 	)
 

@@ -137,7 +137,6 @@ func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHou
 	columns := ""
 
 	for _, slot := range row.UsedSlots {
-		debug(fmt.Sprintf("%+v\n", slot))
 		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
 		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
 
