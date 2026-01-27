@@ -77,7 +77,6 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]string, error) {
 			}
 
 			if err == nil && response != nil {
-				debug(fmt.Sprintf("Got response for %s", room.Name))
 				result.UsedSlots = *response
 			} else {
 				if err != nil {
@@ -128,11 +127,60 @@ func (s *Service) createTableHeader(labelLength, displayedHours int) string {
 }
 
 func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHours int) string {
+	type parsedSlot struct {
+		Start time.Time
+		End   time.Time
+	}
+
+	var slots []parsedSlot
 	spacing := labelLength - len(row.Name)
 	columns := ""
 
-	for i := 0; i < displayedHours-1; i++ {
-		columns += strings.Repeat("█", 4) + "│"
+	for _, slot := range row.UsedSlots {
+		debug(fmt.Sprintf("%+v\n", slot))
+		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
+		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
+
+		slots = append(slots, parsedSlot{
+			Start: start,
+			End:   end,
+		})
+	}
+
+	// now := time.Now()
+	baseDate := slots[0].Start.Truncate(24 * time.Hour)
+	startTime := baseDate.Add(8 * time.Hour)
+	endTime := baseDate.Add(23 * time.Hour)
+	counter := 0
+
+	current := startTime
+
+	for !current.After(endTime) {
+		occupied := false
+		slotEnd := current.Add(15 * time.Minute)
+
+		for _, slot := range slots {
+			if current.Before(slot.End) && slotEnd.After(slot.Start) {
+				occupied = true
+				break
+			}
+		}
+
+		symbol := " "
+
+		if occupied {
+
+			symbol = "█"
+		}
+
+		if counter%4 == 3 {
+			symbol += "│"
+		}
+
+		columns += symbol
+		counter++
+
+		current = current.Add(15 * time.Minute)
 	}
 
 	return row.Name + strings.Repeat(" ", spacing) + "│" + columns

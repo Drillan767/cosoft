@@ -21,9 +21,6 @@ func (a *Api) GetRoomBusyTime(
 		EndDate   time.Time `json:"endDate"`
 	}
 
-	a.debug(date.Format(time.RFC3339))
-	a.debug(roomId)
-
 	endDate := time.Date(
 		date.Year(),
 		date.Month(),
@@ -73,7 +70,6 @@ func (a *Api) GetRoomBusyTime(
 	if err != nil {
 		return nil, err
 	}
-	a.debug(string(data))
 
 	var response BusyTimeResponse
 	if err := json.Unmarshal(data, &response); err != nil {
