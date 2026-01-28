@@ -42,7 +42,7 @@ func (s *Service) EnsureRoomsStored() error {
 	return s.store.CreateRooms(apiRooms)
 }
 
-func (s *Service) GetRoomAvailabilities(date time.Time) ([]string, error) {
+func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reservation) ([]string, error) {
 	rooms, err := s.store.GetRooms()
 
 	if err != nil {
@@ -106,7 +106,7 @@ func (s *Service) GetRoomAvailabilities(date time.Time) ([]string, error) {
 	rows[0] = s.createTableHeader(maxLabelLength, displayedHours)
 
 	for i, room := range results {
-		rows[i+1] = s.createTableRow(room, maxLabelLength, displayedHours)
+		rows[i+1] = s.createTableRow(room, maxLabelLength, displayedHours, userBookings)
 	}
 
 	return rows, nil
@@ -126,7 +126,11 @@ func (s *Service) createTableHeader(labelLength, displayedHours int) string {
 	return strings.Repeat(" ", labelLength-1) + result
 }
 
-func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHours int) string {
+func (s *Service) createTableRow(
+	row models.RoomUsage,
+	labelLength, displayedHours int,
+	userBookings []api.Reservation,
+) string {
 	type parsedSlot struct {
 		Start time.Time
 		End   time.Time
@@ -146,6 +150,21 @@ func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHou
 		})
 	}
 
+	var userSlots []parsedSlot
+	for _, slot := range userBookings {
+		if slot.ItemName != row.Name {
+			// User booking not matching current row, skipping.
+			continue
+		}
+
+		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
+		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
+		userSlots = append(userSlots, parsedSlot{
+			Start: start,
+			End:   end,
+		})
+	}
+
 	// now := time.Now()
 	baseDate := slots[0].Start.Truncate(24 * time.Hour)
 	startTime := baseDate.Add(8 * time.Hour)
@@ -156,6 +175,7 @@ func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHou
 
 	for !current.After(endTime) {
 		occupied := false
+		ownReservation := false
 		slotEnd := current.Add(15 * time.Minute)
 
 		for _, slot := range slots {
@@ -165,10 +185,20 @@ func (s *Service) createTableRow(row models.RoomUsage, labelLength, displayedHou
 			}
 		}
 
+		for _, uSlot := range userSlots {
+			if current.Before(uSlot.End) && slotEnd.After(uSlot.Start) {
+				ownReservation = true
+				break
+			}
+		}
+
 		symbol := " "
 
 		if occupied {
+			symbol = "░"
+		}
 
+		if ownReservation {
 			symbol = "█"
 		}
 

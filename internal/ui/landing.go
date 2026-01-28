@@ -15,15 +15,15 @@ import (
 )
 
 type LandingModel struct {
-	form             *huh.Form
-	selection        *models.Selection
-	spinner          spinner.Model
-	calendarSpinner  spinner.Model
-	calendar         string
-	nbFutureBookings int
-	loading          bool
-	loadingCalendar  bool
-	err              error
+	form            *huh.Form
+	selection       *models.Selection
+	spinner         spinner.Model
+	calendarSpinner spinner.Model
+	calendar        string
+	futureBookings  *api.FutureBookingsResponse
+	loading         bool
+	loadingCalendar bool
+	err             error
 }
 
 type futureBookingMsg struct {
@@ -54,13 +54,12 @@ func NewLandingModel() *LandingModel {
 	cs.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 
 	m := &LandingModel{
-		selection:        selection,
-		spinner:          s,
-		loading:          true,
-		nbFutureBookings: 0,
-		calendar:         "",
-		calendarSpinner:  cs,
-		loadingCalendar:  true,
+		selection:       selection,
+		spinner:         s,
+		loading:         true,
+		calendar:        "",
+		calendarSpinner: cs,
+		loadingCalendar: true,
 	}
 
 	m.buildForm()
@@ -70,8 +69,8 @@ func NewLandingModel() *LandingModel {
 
 func (m *LandingModel) buildForm() {
 	resaLabel := "My reservations"
-	if m.nbFutureBookings > 0 {
-		resaLabel = fmt.Sprintf("My reservations (%d)", m.nbFutureBookings)
+	if m.futureBookings != nil {
+		resaLabel = fmt.Sprintf("My reservations (%d)", m.futureBookings.Total)
 	}
 
 	m.form = huh.NewForm(
@@ -150,7 +149,6 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case startFetchingMsg:
 		return m, tea.Batch(
 			m.fetchFutureBookings(),
-			m.getCalendarView(),
 			m.updateCredits(),
 		)
 
@@ -160,10 +158,10 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.buildForm()
 			return m, m.form.Init()
 		}
-		m.nbFutureBookings = msg.bookings.Total
+		m.futureBookings = msg.bookings
 		m.loading = false
 		m.buildForm() // Rebuild form with updated data
-		return m, m.form.Init()
+		return m, tea.Batch(m.form.Init(), m.getCalendarView())
 
 	case calendarMsg:
 		m.loadingCalendar = false
@@ -264,7 +262,7 @@ func (m *LandingModel) getCalendarView() tea.Cmd {
 			now.Location(),
 		)
 
-		usage, err := authService.GetRoomAvailabilities(date)
+		usage, err := authService.GetRoomAvailabilities(date, m.futureBookings.Data)
 
 		if err != nil {
 			return calendarMsg{err: err}
