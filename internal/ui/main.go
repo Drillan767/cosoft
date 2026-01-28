@@ -9,6 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+const timeOnlyFormat = "15:04"
+
 type UI struct{}
 
 func NewUI() *UI {
@@ -50,12 +52,14 @@ func validateDateIsFuture(s string) error {
 	}
 
 	date, err := time.Parse(time.DateOnly, s)
-
 	if err != nil {
 		return fmt.Errorf("date could not be parsed")
 	}
 
-	if time.Now().After(date) {
+	// Compute the today's date and compare it with the input.
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	if date.Before(today) {
 		return fmt.Errorf("date is not in the future")
 	}
 
@@ -67,7 +71,7 @@ func validateHour(s string) error {
 		return fmt.Errorf("hour is required")
 	}
 
-	h, err := time.Parse("15:04", s)
+	h, err := time.Parse(timeOnlyFormat, s)
 
 	if err != nil {
 		return fmt.Errorf("could not parse time")
@@ -86,4 +90,9 @@ func validateHour(s string) error {
 	}
 
 	return nil
+}
+
+// roundHourToQuarter rounds t to the next quarter hour.
+func roundHourToQuarter(t time.Time) time.Time {
+	return t.Truncate(15 * time.Minute).Add(15 * time.Minute)
 }
