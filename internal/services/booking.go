@@ -106,7 +106,7 @@ func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reser
 	rows[0] = s.createTableHeader(maxLabelLength, displayedHours)
 
 	for i, room := range results {
-		rows[i+1] = s.createTableRow(room, maxLabelLength, displayedHours, userBookings)
+		rows[i+1] = s.createTableRow(room, maxLabelLength, userBookings)
 	}
 
 	return rows, nil
@@ -128,7 +128,7 @@ func (s *Service) createTableHeader(labelLength, displayedHours int) string {
 
 func (s *Service) createTableRow(
 	row models.RoomUsage,
-	labelLength, displayedHours int,
+	labelLength int,
 	userBookings []api.Reservation,
 ) string {
 	type parsedSlot struct {
