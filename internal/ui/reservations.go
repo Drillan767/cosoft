@@ -88,6 +88,10 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return rl, cmd
 	}
 
+	if rl.form == nil {
+		return rl, cmd
+	}
+
 	form, cmd := rl.form.Update(msg)
 
 	if f, ok := form.(*huh.Form); ok {
