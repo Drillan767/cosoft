@@ -171,7 +171,7 @@ func (s *Service) createTableRow(
 	now := getClosestQuarterHour()
 
 	baseDate := slots[0].Start.Truncate(24 * time.Hour)
-	startTime := baseDate.Add(1 * time.Hour)
+	startTime := baseDate.Add(8 * time.Hour)
 	endTime := baseDate.Add(23 * time.Hour)
 	counter := 0
 
