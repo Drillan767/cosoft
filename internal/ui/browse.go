@@ -69,6 +69,7 @@ func NewBrowseModel() *BrowseModel {
 				Options(
 					huh.NewOption("30mn", 30),
 					huh.NewOption("1 hour", 60),
+					huh.NewOption("1 hour 30 minutes", 90),
 					huh.NewOption("2 hours", 120),
 				).
 				Value(&browsePayload.Duration),
