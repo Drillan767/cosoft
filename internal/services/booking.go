@@ -5,10 +5,13 @@ import (
 	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
 func (s *Service) UpdateCredits() (*float64, error) {
@@ -165,9 +168,10 @@ func (s *Service) createTableRow(
 		})
 	}
 
-	// now := time.Now()
+	now := getClosestQuarterHour()
+
 	baseDate := slots[0].Start.Truncate(24 * time.Hour)
-	startTime := baseDate.Add(8 * time.Hour)
+	startTime := baseDate.Add(1 * time.Hour)
 	endTime := baseDate.Add(23 * time.Hour)
 	counter := 0
 
@@ -202,7 +206,19 @@ func (s *Service) createTableRow(
 			symbol = "█"
 		}
 
-		if counter%4 == 3 {
+		isNow := current.Equal(now)
+		nextSlot := current.Add(15 * time.Minute)
+		nextIsNow := nextSlot.Equal(now)
+
+		if isNow {
+			// If current time, display a red pipe,
+			// And replace the hour separation with the same red pipe if the time is round.
+			timeCursor := lipgloss.NewStyle().Foreground(lipgloss.Color("#f45656")).Render("│")
+			symbol = timeCursor + symbol
+		}
+
+		if counter%4 == 3 && !nextIsNow {
+			// If not current time, simply display a normal pipe.
 			symbol += "│"
 		}
 
@@ -213,6 +229,30 @@ func (s *Service) createTableRow(
 	}
 
 	return row.Name + strings.Repeat(" ", spacing) + "│" + columns
+}
+
+func getClosestQuarterHour() time.Time {
+	now := time.Now()
+	currentHour := now.Hour()
+	currentMinutes := now.Minute()
+
+	if currentMinutes > 52 {
+		currentHour++
+	}
+
+	m1 := math.Round(float64(currentMinutes)/float64(15)) * 15
+	m2 := int(m1) % 60
+
+	return time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		currentHour,
+		m2,
+		0,
+		0,
+		time.UTC,
+	)
 }
 
 func debug(text string) {
