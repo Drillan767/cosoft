@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - '7-add-github-actions-for-releases'
     tags:
       # Triggers on tags like v1.0.0, v1.1.0, etc.
       - 'v*'
