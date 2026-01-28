@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - '7-add-github-actions-for-releases'
+    tags:
+      # Triggers on tags like v1.0.0, v1.1.0, etc.
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+      - name: Build binaries
+        run: |
+          # Linux
+          GOOS=linux GOARCH=amd64 go build -o meeting-room-booker-linux-amd64
+          
+          # macOS Intel
+          GOOS=darwin GOARCH=amd64 go build -o meeting-room-booker-darwin-amd64
+          
+          # macOS Apple Silicon
+          GOOS=darwin GOARCH=arm64 go build -o meeting-room-booker-darwin-arm64
+          
+          # Windows
+          GOOS=windows GOARCH=amd64 go build -o meeting-room-booker-windows-amd64.exe
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            meeting-room-booker-linux-amd64
+            meeting-room-booker-darwin-amd64
+            meeting-room-booker-darwin-arm64
+            meeting-room-booker-windows-amd64.exe
