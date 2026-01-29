@@ -48,7 +48,7 @@ func (s *Store) SetupDatabase(dbPath string) error {
 			id VARCHAR(40) PRIMARY KEY NOT NULL,
 			name VARCHAR(50) NOT NULL,
 			nb_users TINYINT NOT NULL DEFAULT 0,
-			price SMALLINT NOT NULL DEFAULT 0,
+			price REAL NOT NULL DEFAULT 0,
 			created_at DATE NOT NULL
 		);
 	`
@@ -243,7 +243,7 @@ func (s *Store) GetRooms() ([]Room, error) {
 func (s *Store) CreateRooms(rooms []models.Room) error {
 	query := `INSERT INTO rooms (id, name, nb_users, price, created_at) VALUES (?, ?, ?, ?, ?)`
 	for _, room := range rooms {
-		_, err := s.db.Exec(query, room.Id, room.Name, room.NbUsers, room.Price*100, time.Now())
+		_, err := s.db.Exec(query, room.Id, room.Name, room.NbUsers, room.Price, time.Now())
 
 		if err != nil {
 			return err
