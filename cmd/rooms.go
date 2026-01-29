@@ -1,79 +1,55 @@
 package cmd
 
 import (
+	"cosoft-cli/internal/common"
+	"cosoft-cli/internal/storage"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/spf13/cobra"
-)
-
-const (
-	purple    = lipgloss.Color("99")
-	gray      = lipgloss.Color("245")
-	lightGray = lipgloss.Color("241")
 )
 
 var roomsCmd = &cobra.Command{
 	Use:   "rooms",
 	Short: "List all rooms in HUB612",
 	Run: func(cmd *cobra.Command, args []string) {
-		re := lipgloss.NewRenderer(os.Stdout)
+		cmn := common.NewCommon()
 
-		var (
-			// HeaderStyle is the lipgloss style used for the table headers.
-			HeaderStyle = re.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center)
-			// CellStyle is the base lipgloss style used for the table rows.
-			CellStyle = re.NewStyle().Padding(0, 1).Width(14)
-			// OddRowStyle is the lipgloss style used for odd-numbered table rows.
-			OddRowStyle = CellStyle.Foreground(gray)
-			// EvenRowStyle is the lipgloss style used for even-numbered table rows.
-			EvenRowStyle = CellStyle.Foreground(lightGray)
-			// BorderStyle is the lipgloss style used for the table border.
-			BorderStyle = lipgloss.NewStyle().Foreground(purple)
-		)
+		configDir, err := os.UserConfigDir()
 
-		rows := [][]string{
-			{"Chinese", "您好", "你好"},
-			{"Japanese", "こんにちは", "やあ"},
-			{"Russian", "Здравствуйте", "Привет"},
-			{"Spanish", "Hola", "¿Qué tal?"},
+		if err != nil {
+			log.Fatal(err)
 		}
 
-		t := table.New().
-			Border(lipgloss.ThickBorder()).
-			BorderStyle(BorderStyle).
-			StyleFunc(func(row, col int) lipgloss.Style {
-				var style lipgloss.Style
+		path := fmt.Sprintf("%s/cosoft/data.db", configDir)
 
-				switch {
-				case row == table.HeaderRow:
-					return HeaderStyle
-				case row%2 == 0:
-					style = EvenRowStyle
-				default:
-					style = OddRowStyle
-				}
+		store, err := storage.NewStore(path)
 
-				// Make the second column a little wider.
-				if col == 1 {
-					style = style.Width(22)
-				}
+		if err != nil {
+			log.Fatal(err)
+		}
 
-				// Arabic is a right-to-left language, so right align the text.
-				if row < len(rows) && rows[row][0] == "Arabic" && col != 0 {
-					style = style.Align(lipgloss.Right)
-				}
+		rooms, err := store.GetRooms()
 
-				return style
-			}).
-			Headers("LANGUAGE", "FORMAL", "INFORMAL").
-			Rows(rows...)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-		t.Row("English", "You look absolutely fabulous.", "How's it going?")
+		headers := []string{"NAME", "CAPACITY", "PRICE"}
 
-		fmt.Println(t)
+		rows := make([][]string, len(rooms))
+
+		for i, room := range rooms {
+			rows[i] = []string{
+				room.Name,
+				strconv.Itoa(room.MaxUsers) + " person(s)",
+				strconv.FormatFloat(room.Price, 'g', 5, 64) + " credits",
+			}
+		}
+
+		fmt.Println(cmn.CreateTable(headers, rows))
 	},
 }
 
