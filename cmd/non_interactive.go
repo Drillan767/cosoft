@@ -37,7 +37,7 @@ var bookCmd = &cobra.Command{
 
 func init() {
 	bookCmd.Flags().IntP("nbUsers", "u", 1, "For how many people?")
-	bookCmd.Flags().StringP("name", "n", "", "If you want a room in particular")
+	bookCmd.Flags().StringP("name", "n", "", "If you want a room in particular. Will pick the 1st available if not provided.")
 	bookCmd.Flags().StringP("time", "t", "", "Book on a specific date")
 	bookCmd.Flags().IntP("duration", "d", 30, "Duration of the booking in minutes (Must be a multiple of 15 minutes)")
 	rootCmd.AddCommand(bookCmd)

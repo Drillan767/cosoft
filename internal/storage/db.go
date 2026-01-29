@@ -5,6 +5,7 @@ import (
 	"cosoft-cli/shared/models"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -251,4 +252,27 @@ func (s *Store) CreateRooms(rooms []models.Room) error {
 	}
 
 	return nil
+}
+
+func (s *Store) GetRoomByName(name string) (*models.Room, error) {
+	var room models.Room
+
+	query := `SELECT * FROM rooms WHERE name = ? LIMIT 1;`
+
+	err := s.db.QueryRow(query, name).Scan(
+		&room.Id,
+		&room.Name,
+		&room.NbUsers,
+		&room.Price,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("No room matching your query. \n\n Please try ./cosoft rooms to see available ones.")
+		}
+		return nil, err
+	}
+
+	return &room, nil
+
 }
