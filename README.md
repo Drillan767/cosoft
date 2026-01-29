@@ -2,7 +2,7 @@
 
 This TUI tool's goal is to simplify any meeting room's booking without having to use the actual website.
 
-## How it works
+## How it works
 
 1. You login for the 1st time using your Cosoft credentials
 2. The JWT is stored locally in `~/.cosoft`, alongside other files such as the list of available rooms (to avoid keeping fetching them) and your favorites among them.
@@ -34,7 +34,7 @@ Once the booking is done, you'll get a fancy table that will summarize the detai
 - Room name
 - Start time -> end time
 
-### Upcoming reservations (With dynamic number)
+### Upcoming reservations (With dynamic number)
 
 Will list all future bookings you've done. The list contains all details about the reservation such as the meeting room, date and time of booking.
 
