@@ -250,7 +250,7 @@ func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
 		}
 
 		if len(rooms) == 0 {
-			return bookingFailedMsg{err: fmt.Errorf("No room available for the selected time")}
+			return bookingFailedMsg{err: fmt.Errorf("no room available for the selected time")}
 		}
 
 		return roomFetchedMsg{availableRooms: rooms}
@@ -281,11 +281,11 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 		}
 
 		if pickedRoom == nil {
-			return bookingFailedMsg{err: fmt.Errorf("No room suiting user's selection, aborting")}
+			return bookingFailedMsg{err: fmt.Errorf("no room suiting user's selection, aborting")}
 		}
 
 		if user.Credits < pickedRoom.Price {
-			return bookingFailedMsg{err: fmt.Errorf("Not enough credits to perfor, the booking, aborting")}
+			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perfor, the booking, aborting")}
 		}
 
 		payload := api.CosoftBookingPayload{

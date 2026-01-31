@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cosoft-cli/internal/services"
 	"fmt"
 	"os"
 	"time"
@@ -62,8 +63,21 @@ var bookCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Println("reservations called")
-		fmt.Println(nbUsers, name, date, duration)
+		s, err := services.NewService()
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		t, err := s.NonInteractiveBooking(nbUsers, duration, name, parsedTime)
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
+		fmt.Println(t)
 	},
 }
 

@@ -4,6 +4,7 @@ import (
 	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -233,21 +234,9 @@ func (s *Service) createCalendarRow(
 
 func (s *Service) NonInteractiveBooking(
 	capacity, duration int,
-	name, time string,
+	name string,
+	dt time.Time,
 ) (string, error) {
-
-	/*
-		1. Check that user is authenticated
-		2. If name given
-			2.A. Check that the rooms table has content
-			2.B. Select room with the matching name
-			2.C. Then after fetching availabilities, check if the selected rooms is present among the results
-			2.D. Then select this room in particular for the booking
-			2.E. If not present, pick the 1st available room from the list
-		3.
-
-	*/
-
 	user, err := s.store.GetUserData()
 
 	if err != nil {
@@ -263,15 +252,100 @@ func (s *Service) NonInteractiveBooking(
 		return "", fmt.Errorf("user not authenticated: %v", err)
 	}
 
-	/*
-		payload := api.CosoftAvailabilityPayload{
+	var room *models.Room
 
-			NbPeople: capacity,
+	if name != "" {
+		// Retrieve rooms if nothing in db
+		err = s.EnsureRoomsStored()
+
+		if err != nil {
+			return "", err
 		}
 
-		rooms, err := clientAPi.GetAvailableRooms()
+		// Retrieve room by name
+		room, err = s.store.GetRoomByName(name)
+
+		if err != nil {
+			return "", err
+		}
+	}
+
+	payload := api.CosoftAvailabilityPayload{
+		DateTime: dt,
+		Duration: duration,
+		NbPeople: capacity,
+	}
+
+	clientApi := api.NewApi()
+
+	availabilities, err := clientApi.GetAvailableRooms(user.WAuth, user.WAuthRefresh, payload)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(availabilities) == 0 {
+		return "", errors.New("no available rooms")
+	}
+
+	// If room name was provided, check if is among the API's response.
+	if name != "" {
+		for _, avail := range availabilities {
+			if avail.Name == name {
+				room = &avail
+				break
+			}
+		}
+
+		if room == nil {
+			return "", fmt.Errorf("room %s not available for the selected filters", name)
+		}
+	}
+
+	// Set room id as either the asked room's id, or the 1st available room id
+	targetRoom := availabilities[0]
+
+	if room != nil {
+		targetRoom = *room
+	}
+
+	if targetRoom.Price > user.Credits {
+		return "", errors.New("not enough credits")
+	}
+
+	bookingPayload := api.CosoftBookingPayload{
+		CosoftAvailabilityPayload: api.CosoftAvailabilityPayload{
+			DateTime: dt,
+			Duration: duration,
+			NbPeople: capacity,
+		},
+		UserCredits: user.Credits,
+		Room:        targetRoom,
+	}
+
+	err = clientApi.BookRoom(user.WAuth, user.WAuthRefresh, bookingPayload)
+
+	if err != nil {
+		return "", err
+	}
+
+	/*
+		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
+		endTime := dt.Add(time.Duration(b.browsePayload.Duration) * time.Minute)
+		dateFormat := "02/01/2006 15:04"
+
+		headers := []string{"ROOM", "DURATION", "COST"}
+
+		rows := [][]string{
+			{
+				b.bookedRoom.Name,
+				fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
+				fmt.Sprintf("%.2f credits", b.bookedRoom.Price),
+			},
+		}
 
 	*/
+
 	return "", nil
 }
 
