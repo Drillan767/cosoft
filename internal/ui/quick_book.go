@@ -28,7 +28,6 @@ type QuickBookModel struct {
 	payload    *api.CosoftAvailabilityPayload
 	rooms      []models.Room
 	bookedRoom *models.Room
-	common     common.Common
 	err        error
 }
 
@@ -60,7 +59,6 @@ func NewQuickBookModel() *QuickBookModel {
 		spinner:  s,
 		progress: p,
 		rooms:    []models.Room{},
-		common:   common.Common{},
 	}
 
 	qb.buildForm()
@@ -327,5 +325,5 @@ func (qb *QuickBookModel) generateTable() string {
 		},
 	}
 
-	return qb.common.CreateTable(headers, rows)
+	return common.CreateTable(headers, rows)
 }

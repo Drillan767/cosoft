@@ -15,8 +15,6 @@ var roomsCmd = &cobra.Command{
 	Use:   "rooms",
 	Short: "List all rooms in HUB612",
 	Run: func(cmd *cobra.Command, args []string) {
-		cmn := common.NewCommon()
-
 		configDir, err := os.UserConfigDir()
 
 		if err != nil {
@@ -49,7 +47,7 @@ var roomsCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Println(cmn.CreateTable(headers, rows))
+		fmt.Println(common.CreateTable(headers, rows))
 	},
 }
 

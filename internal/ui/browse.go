@@ -25,7 +25,6 @@ type BrowseModel struct {
 	bookForm      *huh.Form
 	browsePayload *api.BrowsePayload
 	bookPayload   *api.CosoftBookingPayload
-	common        common.Common
 	err           error
 }
 
@@ -86,7 +85,6 @@ func NewBrowseModel() *BrowseModel {
 		roomId:        "",
 		browsePayload: browsePayload,
 		bookPayload:   bookPayload,
-		common:        common.Common{},
 	}
 }
 
@@ -309,7 +307,7 @@ func (b *BrowseModel) generateTable() string {
 		},
 	}
 
-	return b.common.CreateTable(headers, rows)
+	return common.CreateTable(headers, rows)
 }
 
 func (b *BrowseModel) getStartTime(startDate, startHour string) time.Time {

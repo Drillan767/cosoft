@@ -7,11 +7,7 @@ import (
 
 type Common struct{}
 
-func NewCommon() *Common {
-	return &Common{}
-}
-
-func (c *Common) CreateTable(header []string, rows [][]string) string {
+func CreateTable(header []string, rows [][]string) string {
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
 		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b"))).
