@@ -7,7 +7,6 @@ import (
 	"cosoft-cli/internal/ui/components"
 	"cosoft-cli/shared/models"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -112,7 +111,7 @@ func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if qb.form.State == huh.StateCompleted {
-			qb.payload.DateTime = getClosestQuarterHour()
+			qb.payload.DateTime = common.GetClosestQuarterHour()
 			qb.phase = 1
 			qb.bookPhase = 1
 			return qb, tea.Batch(qb.spinner.Tick, qb.getRoomsAvailability())
@@ -161,32 +160,8 @@ func (qb *QuickBookModel) View() string {
 	}
 }
 
-func getClosestQuarterHour() time.Time {
-	now := time.Now()
-	currentHour := now.Hour()
-	currentMinutes := now.Minute()
-
-	if currentMinutes > 52 {
-		currentHour++
-	}
-
-	m1 := math.Round(float64(currentMinutes)/float64(15)) * 15
-	m2 := int(m1) % 60
-
-	return time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		currentHour,
-		m2,
-		0,
-		0,
-		now.Location(),
-	)
-}
-
 func (qb *QuickBookModel) buildForm() {
-	t := getClosestQuarterHour()
+	t := common.GetClosestQuarterHour()
 
 	durations := []components.Item[int]{
 		{
