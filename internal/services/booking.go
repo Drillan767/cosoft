@@ -106,16 +106,16 @@ func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reser
 
 	rows := make([]string, len(results)+1)
 
-	rows[0] = s.createTableHeader(maxLabelLength, displayedHours)
+	rows[0] = s.createCalendarHeader(maxLabelLength, displayedHours)
 
 	for i, room := range results {
-		rows[i+1] = s.createTableRow(room, maxLabelLength, userBookings)
+		rows[i+1] = s.createCalendarRow(room, maxLabelLength, userBookings)
 	}
 
 	return rows, nil
 }
 
-func (s *Service) createTableHeader(labelLength, displayedHours int) string {
+func (s *Service) createCalendarHeader(labelLength, displayedHours int) string {
 	spacing := 2
 	result := ""
 
@@ -129,7 +129,7 @@ func (s *Service) createTableHeader(labelLength, displayedHours int) string {
 	return strings.Repeat(" ", labelLength-1) + result
 }
 
-func (s *Service) createTableRow(
+func (s *Service) createCalendarRow(
 	row models.RoomUsage,
 	labelLength int,
 	userBookings []api.Reservation,
