@@ -231,6 +231,50 @@ func (s *Service) createCalendarRow(
 	return row.Name + strings.Repeat(" ", spacing) + "│" + columns
 }
 
+func (s *Service) NonInteractiveBooking(
+	capacity, duration int,
+	name, time string,
+) (string, error) {
+
+	/*
+		1. Check that user is authenticated
+		2. If name given
+			2.A. Check that the rooms table has content
+			2.B. Select room with the matching name
+			2.C. Then after fetching availabilities, check if the selected rooms is present among the results
+			2.D. Then select this room in particular for the booking
+			2.E. If not present, pick the 1st available room from the list
+		3.
+
+	*/
+
+	user, err := s.store.GetUserData()
+
+	if err != nil {
+		return "", err
+	}
+
+	clientAPi := api.NewApi()
+
+	// Ensure user is authenticated
+	err = clientAPi.GetAuth(user.WAuth, user.WAuthRefresh)
+
+	if err != nil {
+		return "", fmt.Errorf("user not authenticated: %v", err)
+	}
+
+	/*
+		payload := api.CosoftAvailabilityPayload{
+
+			NbPeople: capacity,
+		}
+
+		rooms, err := clientAPi.GetAvailableRooms()
+
+	*/
+	return "", nil
+}
+
 func getClosestQuarterHour() time.Time {
 	now := time.Now()
 	currentHour := now.Hour()
