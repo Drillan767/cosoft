@@ -257,7 +257,7 @@ func (s *Store) CreateRooms(rooms []models.Room) error {
 func (s *Store) GetRoomByName(name string) (*models.Room, error) {
 	var room models.Room
 
-	query := `SELECT * FROM rooms WHERE name = ? LIMIT 1;`
+	query := `SELECT id, name, nb_users, price FROM rooms WHERE name = ? LIMIT 1;`
 
 	err := s.db.QueryRow(query, name).Scan(
 		&room.Id,

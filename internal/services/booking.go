@@ -2,11 +2,11 @@ package services
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
 	"errors"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 	"sync"
@@ -169,7 +169,7 @@ func (s *Service) createCalendarRow(
 		})
 	}
 
-	now := getClosestQuarterHour()
+	now := common.GetClosestQuarterHour()
 
 	baseDate := slots[0].Start.Truncate(24 * time.Hour)
 	startTime := baseDate.Add(8 * time.Hour)
@@ -243,10 +243,11 @@ func (s *Service) NonInteractiveBooking(
 		return "", err
 	}
 
-	clientAPi := api.NewApi()
+	clientApi := api.NewApi()
 
 	// Ensure user is authenticated
-	err = clientAPi.GetAuth(user.WAuth, user.WAuthRefresh)
+	fmt.Println("checking user authentication status...")
+	err = clientApi.GetAuth(user.WAuth, user.WAuthRefresh)
 
 	if err != nil {
 		return "", fmt.Errorf("user not authenticated: %v", err)
@@ -254,30 +255,13 @@ func (s *Service) NonInteractiveBooking(
 
 	var room *models.Room
 
-	if name != "" {
-		// Retrieve rooms if nothing in db
-		err = s.EnsureRoomsStored()
-
-		if err != nil {
-			return "", err
-		}
-
-		// Retrieve room by name
-		room, err = s.store.GetRoomByName(name)
-
-		if err != nil {
-			return "", err
-		}
-	}
-
 	payload := api.CosoftAvailabilityPayload{
 		DateTime: dt,
 		Duration: duration,
 		NbPeople: capacity,
 	}
 
-	clientApi := api.NewApi()
-
+	fmt.Println("retrieving available rooms with requested filters...")
 	availabilities, err := clientApi.GetAvailableRooms(user.WAuth, user.WAuthRefresh, payload)
 
 	if err != nil {
@@ -290,16 +274,19 @@ func (s *Service) NonInteractiveBooking(
 
 	// If room name was provided, check if is among the API's response.
 	if name != "" {
+		var found *models.Room
 		for _, avail := range availabilities {
 			if avail.Name == name {
-				room = &avail
+				found = &avail
 				break
 			}
 		}
 
-		if room == nil {
-			return "", fmt.Errorf("room %s not available for the selected filters", name)
+		if found == nil {
+			return "", fmt.Errorf("room %s not available for the selected filter", name)
 		}
+
+		room = found
 	}
 
 	// Set room id as either the asked room's id, or the 1st available room id
@@ -323,28 +310,28 @@ func (s *Service) NonInteractiveBooking(
 		Room:        targetRoom,
 	}
 
+	fmt.Println("booking requested room...")
 	err = clientApi.BookRoom(user.WAuth, user.WAuthRefresh, bookingPayload)
 
 	if err != nil {
 		return "", err
 	}
 
-	/*
-		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
-		endTime := dt.Add(time.Duration(b.browsePayload.Duration) * time.Minute)
-		dateFormat := "02/01/2006 15:04"
+	endTime := dt.Add(time.Duration(duration) * time.Minute)
+	success := lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render(`✓ Booking complete!`)
+	dateFormat := "02/01/2006 15:04"
 
-		headers := []string{"ROOM", "DURATION", "COST"}
+	headers := []string{"ROOM", "DURATION", "COST"}
 
-		rows := [][]string{
-			{
-				b.bookedRoom.Name,
-				fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
-				fmt.Sprintf("%.2f credits", b.bookedRoom.Price),
-			},
-		}
+	rows := [][]string{
+		{
+			targetRoom.Name,
+			fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
+			fmt.Sprintf("%.2f credits", targetRoom.Price),
+		},
+	}
 
-	*/
+	fmt.Println(success)
 
 	return common.CreateTable(headers, rows), nil
 }

@@ -4,8 +4,9 @@ This TUI tool's goal is to simplify any meeting room's booking without having to
 
 ## How it works
 
-1. You login for the 1st time using your Cosoft credentials
-2. The JWT is stored locally in `~/.cosoft`, alongside other files such as the list of available rooms (to avoid keeping fetching them) and your favorites among them.
+1. You log in for the 1st time using your Cosoft credentials
+2. Your authentication information are stored in a SQLite database in your user config directory. This location changes
+based on your OS.
 3. Once logged in, you can perform several actions
 
 ## Main functions
@@ -16,23 +17,23 @@ Display an ASCII representation of a calendar, displaying when rooms are used an
 
 ### Quick book
 
-Will book the 1st available room depending on if the room is available right now, and available long enough for you to book it with the duration you picked.
-
-If one of the rooms is your favorite, will pick it for you.
+Will book the 1st available room depending on if the room is available right now, and available long enough for you to
+book it with the duration you picked.
 
 Once the booking is done, you'll get a fancy table that will summarize the details of the booking:
 
 - Room name
-- Start time -> end time
+- Start time → end time
+- Credits paid for the booking
 
 ### Browse and book
 
-Will allow you to pick a date, time and duration, that will display all rooms available with these filters.
+Will allow you to pick a date, time and duration, and a room size that will display all rooms available with these filters.
 
 Once the booking is done, you'll get a fancy table that will summarize the details of the booking:
 
 - Room name
-- Start time -> end time
+- Start time → end time
 
 ### Upcoming reservations (With dynamic number)
 
@@ -40,10 +41,20 @@ Will list all future bookings you've done. The list contains all details about t
 
 It will also allow you to cancel it.
 
-### Previous reservations
+### Previous reservations (Coming soon)
 
-Will allow you to have an history of your past reservations, but selecting one of them will allow you to book the specific room again, but you'll have to pick a new date, time and duration for this.
+Will allow you to have a history of your past reservations, but selecting one of them will allow you to book the specific room again, but you'll have to pick a new date, time and duration for this.
 
+## Non-interactive booking
+
+Will allow you to book a meeting room with various options:
+
+| Parameter | Shortcut | default | Description                                                   |
+|-----------|----------|---------|---------------------------------------------------------------|
+| capacity  | c        | 1       | Will filter rooms by size                                     |
+| name      | n        |         | Will book a specific room if available                        |
+| time      | d        |         | If provided, will book your room at the desired time          |
+| duration  | l        | 30      | Indicates the booking's duration. Must be between 30 and 120. |
 
 ## CLI
 
@@ -56,3 +67,6 @@ All these functions are available directly from the main command itself.
 | `options`               | Settings                  |
 | `resa` / `reservations` | My reservations           |
 | `history`               | Previous reservations     |
+| `book`                  | Non interactive booking   |
+
+

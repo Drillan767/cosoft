@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/services"
 	"fmt"
 	"os"
@@ -19,8 +20,14 @@ var bookCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		// Hard limits for filtering
 		if nbUsers < 1 {
 			nbUsers = 1
+		}
+
+		if nbUsers > 2 {
+			fmt.Println("Too many users, defaulting to 2.")
+			nbUsers = 2
 		}
 
 		name, err := cmd.Flags().GetString("name")
@@ -35,11 +42,16 @@ var bookCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		parsedTime, err := time.Parse("2006-01-02T15:04", date)
+		var parsedTime time.Time
 
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		if date == "" {
+			parsedTime = common.GetClosestQuarterHour()
+		} else {
+			parsedTime, err = time.Parse("2006-01-02T15:04", date)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 
 		if parsedTime.Before(time.Now()) {
@@ -58,9 +70,14 @@ var bookCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if duration == 0 || duration%15 != 0 {
+		if duration <= 0 || duration%15 != 0 {
 			fmt.Println("Duration must be a multiple of 15")
 			os.Exit(1)
+		}
+
+		// Hard limit for duration
+		if duration > 120 {
+			duration = 120
 		}
 
 		s, err := services.NewService()
@@ -98,14 +115,14 @@ func init() {
 
 	bookCmd.Flags().StringP(
 		"time",
-		"d",
+		"t",
 		"",
 		"Expected format: yyyy-MM-ddTHH:mm, cannot be in the past, round the time to the closest quarter",
 	)
 
 	bookCmd.Flags().IntP(
 		"duration",
-		"l",
+		"d",
 		30,
 		"Duration of the booking in minutes (Must be a multiple of 15 minutes)",
 	)

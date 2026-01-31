@@ -1,16 +1,5 @@
 # General workflow
 
-## Main display
-
-- Calendar view of upcoming reservations in grid
-- Menu with quick actions
-    - Quick book
-    - Browse & book
-    - Upcoming reservations (3)
-    - Previous reservations
-    - Settings
-    - Quit
-
 ## Previous reservations
 
 **Note** : This requires to know if such information is available.
