@@ -2,10 +2,11 @@ package services
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
+	"errors"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 	"sync"
@@ -106,16 +107,16 @@ func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reser
 
 	rows := make([]string, len(results)+1)
 
-	rows[0] = s.createTableHeader(maxLabelLength, displayedHours)
+	rows[0] = s.createCalendarHeader(maxLabelLength, displayedHours)
 
 	for i, room := range results {
-		rows[i+1] = s.createTableRow(room, maxLabelLength, userBookings)
+		rows[i+1] = s.createCalendarRow(room, maxLabelLength, userBookings)
 	}
 
 	return rows, nil
 }
 
-func (s *Service) createTableHeader(labelLength, displayedHours int) string {
+func (s *Service) createCalendarHeader(labelLength, displayedHours int) string {
 	spacing := 2
 	result := ""
 
@@ -129,7 +130,7 @@ func (s *Service) createTableHeader(labelLength, displayedHours int) string {
 	return strings.Repeat(" ", labelLength-1) + result
 }
 
-func (s *Service) createTableRow(
+func (s *Service) createCalendarRow(
 	row models.RoomUsage,
 	labelLength int,
 	userBookings []api.Reservation,
@@ -168,7 +169,7 @@ func (s *Service) createTableRow(
 		})
 	}
 
-	now := getClosestQuarterHour()
+	now := common.GetClosestQuarterHour()
 
 	baseDate := slots[0].Start.Truncate(24 * time.Hour)
 	startTime := baseDate.Add(8 * time.Hour)
@@ -231,28 +232,108 @@ func (s *Service) createTableRow(
 	return row.Name + strings.Repeat(" ", spacing) + "│" + columns
 }
 
-func getClosestQuarterHour() time.Time {
-	now := time.Now()
-	currentHour := now.Hour()
-	currentMinutes := now.Minute()
+func (s *Service) NonInteractiveBooking(
+	capacity, duration int,
+	name string,
+	dt time.Time,
+) (string, error) {
+	user, err := s.store.GetUserData()
 
-	if currentMinutes > 52 {
-		currentHour++
+	if err != nil {
+		return "", err
 	}
 
-	m1 := math.Round(float64(currentMinutes)/float64(15)) * 15
-	m2 := int(m1) % 60
+	clientApi := api.NewApi()
 
-	return time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		currentHour,
-		m2,
-		0,
-		0,
-		time.UTC,
-	)
+	// Ensure user is authenticated
+	fmt.Println("checking user authentication status...")
+	err = clientApi.GetAuth(user.WAuth, user.WAuthRefresh)
+
+	if err != nil {
+		return "", fmt.Errorf("user not authenticated: %v", err)
+	}
+
+	var room *models.Room
+
+	payload := api.CosoftAvailabilityPayload{
+		DateTime: dt,
+		Duration: duration,
+		NbPeople: capacity,
+	}
+
+	fmt.Println("retrieving available rooms with requested filters...")
+	availabilities, err := clientApi.GetAvailableRooms(user.WAuth, user.WAuthRefresh, payload)
+
+	if err != nil {
+		return "", err
+	}
+
+	if len(availabilities) == 0 {
+		return "", errors.New("no available rooms")
+	}
+
+	// If room name was provided, check if is among the API's response.
+	if name != "" {
+		var found *models.Room
+		for _, avail := range availabilities {
+			if avail.Name == name {
+				found = &avail
+				break
+			}
+		}
+
+		if found == nil {
+			return "", fmt.Errorf("room %s not available for the selected filter", name)
+		}
+
+		room = found
+	}
+
+	// Set room id as either the asked room's id, or the 1st available room id
+	targetRoom := availabilities[0]
+
+	if room != nil {
+		targetRoom = *room
+	}
+
+	if targetRoom.Price > user.Credits {
+		return "", errors.New("not enough credits")
+	}
+
+	bookingPayload := api.CosoftBookingPayload{
+		CosoftAvailabilityPayload: api.CosoftAvailabilityPayload{
+			DateTime: dt,
+			Duration: duration,
+			NbPeople: capacity,
+		},
+		UserCredits: user.Credits,
+		Room:        targetRoom,
+	}
+
+	fmt.Println("booking requested room...")
+	err = clientApi.BookRoom(user.WAuth, user.WAuthRefresh, bookingPayload)
+
+	if err != nil {
+		return "", err
+	}
+
+	endTime := dt.Add(time.Duration(duration) * time.Minute)
+	success := lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render(`✓ Booking complete!`)
+	dateFormat := "02/01/2006 15:04"
+
+	headers := []string{"ROOM", "DURATION", "COST"}
+
+	rows := [][]string{
+		{
+			targetRoom.Name,
+			fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
+			fmt.Sprintf("%.2f credits", targetRoom.Price),
+		},
+	}
+
+	fmt.Println(success)
+
+	return common.CreateTable(headers, rows), nil
 }
 
 func debug(text string) {

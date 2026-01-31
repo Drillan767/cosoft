@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/services"
 	"cosoft-cli/internal/ui/components"
 	"cosoft-cli/shared/models"
@@ -12,7 +13,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 )
 
 type BrowseModel struct {
@@ -293,33 +293,21 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 }
 
 func (b *BrowseModel) generateTable() string {
-	t := table.New().
-		Border(lipgloss.NormalBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b"))).
-		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case row == table.HeaderRow:
-				return lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b")).Bold(true).Align(lipgloss.Center)
-			case col == 1:
-				return lipgloss.NewStyle().Padding(0, 1).Width(20).Foreground(lipgloss.Color("245"))
-			default:
-				return lipgloss.NewStyle().Padding(0, 1).Width(14).Foreground(lipgloss.Color("245"))
-			}
-		}).
-		Headers("ROOM", "DURATION", "COST")
-
 	dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
-
 	endTime := dt.Add(time.Duration(b.browsePayload.Duration) * time.Minute)
 	dateFormat := "02/01/2006 15:04"
 
-	t.Row(
-		b.bookedRoom.Name,
-		fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
-		fmt.Sprintf("%.2f credits", b.bookedRoom.Price),
-	)
+	headers := []string{"ROOM", "DURATION", "COST"}
 
-	return "\n\n" + t.String() + "\n\n"
+	rows := [][]string{
+		{
+			b.bookedRoom.Name,
+			fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
+			fmt.Sprintf("%.2f credits", b.bookedRoom.Price),
+		},
+	}
+
+	return common.CreateTable(headers, rows)
 }
 
 func (b *BrowseModel) getStartTime(startDate, startHour string) time.Time {

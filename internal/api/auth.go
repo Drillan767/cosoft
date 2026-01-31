@@ -88,20 +88,17 @@ func (a *Api) GetAuth(wAuth, wAuthRefresh string) error {
 	type Result struct {
 	}
 
-	req, err := http.NewRequest(
+	req, client, err := a.prepareHeaderCookies(
+		wAuth,
+		wAuthRefresh,
 		"GET",
-		apiUrl+"/users/auth",
+		fmt.Sprintf("%s/users/auth", apiUrl),
 		nil,
 	)
 
 	if err != nil {
 		return err
 	}
-
-	client := &http.Client{}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
 
 	resp, err := client.Do(req)
 
@@ -125,20 +122,18 @@ func (a *Api) GetAuth(wAuth, wAuthRefresh string) error {
 }
 
 func (a *Api) GetCredits(wAuth, wAuthRefresh string) (float64, error) {
-	req, err := http.NewRequest(
+
+	req, client, err := a.prepareHeaderCookies(
+		wAuth,
+		wAuthRefresh,
 		"GET",
-		apiUrl+"/users/auth",
+		fmt.Sprintf("%s/users/auth", apiUrl),
 		nil,
 	)
 
 	if err != nil {
 		return 0, err
 	}
-
-	client := &http.Client{}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
 
 	resp, err := client.Do(req)
 

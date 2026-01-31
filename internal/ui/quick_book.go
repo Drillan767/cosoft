@@ -2,11 +2,11 @@ package ui
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/services"
 	"cosoft-cli/internal/ui/components"
 	"cosoft-cli/shared/models"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -14,7 +14,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 )
 
 type QuickBookModel struct {
@@ -112,7 +111,7 @@ func (qb *QuickBookModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if qb.form.State == huh.StateCompleted {
-			qb.payload.DateTime = getClosestQuarterHour()
+			qb.payload.DateTime = common.GetClosestQuarterHour()
 			qb.phase = 1
 			qb.bookPhase = 1
 			return qb, tea.Batch(qb.spinner.Tick, qb.getRoomsAvailability())
@@ -161,32 +160,8 @@ func (qb *QuickBookModel) View() string {
 	}
 }
 
-func getClosestQuarterHour() time.Time {
-	now := time.Now()
-	currentHour := now.Hour()
-	currentMinutes := now.Minute()
-
-	if currentMinutes > 52 {
-		currentHour++
-	}
-
-	m1 := math.Round(float64(currentMinutes)/float64(15)) * 15
-	m2 := int(m1) % 60
-
-	return time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		currentHour,
-		m2,
-		0,
-		0,
-		now.Location(),
-	)
-}
-
 func (qb *QuickBookModel) buildForm() {
-	t := getClosestQuarterHour()
+	t := common.GetClosestQuarterHour()
 
 	durations := []components.Item[int]{
 		{
@@ -250,7 +225,7 @@ func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
 		}
 
 		if len(rooms) == 0 {
-			return bookingFailedMsg{err: fmt.Errorf("No room available for the selected time")}
+			return bookingFailedMsg{err: fmt.Errorf("no room available for the selected time")}
 		}
 
 		return roomFetchedMsg{availableRooms: rooms}
@@ -281,11 +256,11 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 		}
 
 		if pickedRoom == nil {
-			return bookingFailedMsg{err: fmt.Errorf("No room suiting user's selection, aborting")}
+			return bookingFailedMsg{err: fmt.Errorf("no room suiting user's selection, aborting")}
 		}
 
 		if user.Credits < pickedRoom.Price {
-			return bookingFailedMsg{err: fmt.Errorf("Not enough credits to perfor, the booking, aborting")}
+			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perfor, the booking, aborting")}
 		}
 
 		payload := api.CosoftBookingPayload{
@@ -311,30 +286,19 @@ func (qb *QuickBookModel) bookRoom() tea.Cmd {
 }
 
 func (qb *QuickBookModel) generateTable() string {
-	t := table.New().
-		Border(lipgloss.NormalBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b"))).
-		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case row == table.HeaderRow:
-				return lipgloss.NewStyle().Foreground(lipgloss.Color("#fd4b4b")).Bold(true).Align(lipgloss.Center)
-			case col == 1:
-				return lipgloss.NewStyle().Padding(0, 1).Width(20).Foreground(lipgloss.Color("245"))
-			default:
-				return lipgloss.NewStyle().Padding(0, 1).Width(14).Foreground(lipgloss.Color("245"))
-			}
-		}).
-		Headers("ROOM", "DURATION", "COST")
-
 	startTime := qb.payload.DateTime
 	endTime := startTime.Add(time.Duration(qb.payload.Duration) * time.Minute)
 	dateFormat := "02/01/2006 15:04"
 
-	t.Row(
-		qb.bookedRoom.Name,
-		fmt.Sprintf("%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
-		fmt.Sprintf("%.2f credits", qb.bookedRoom.Price),
-	)
+	headers := []string{"ROOM", "DURATION", "COST"}
 
-	return "\n\n" + t.String() + "\n\n"
+	rows := [][]string{
+		{
+			qb.bookedRoom.Name,
+			fmt.Sprintf("%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
+			fmt.Sprintf("%.2f credits", qb.bookedRoom.Price),
+		},
+	}
+
+	return common.CreateTable(headers, rows)
 }

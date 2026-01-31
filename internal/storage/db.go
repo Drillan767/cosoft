@@ -5,6 +5,7 @@ import (
 	"cosoft-cli/shared/models"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -48,7 +49,7 @@ func (s *Store) SetupDatabase(dbPath string) error {
 			id VARCHAR(40) PRIMARY KEY NOT NULL,
 			name VARCHAR(50) NOT NULL,
 			nb_users TINYINT NOT NULL DEFAULT 0,
-			price SMALLINT NOT NULL DEFAULT 0,
+			price REAL NOT NULL DEFAULT 0,
 			created_at DATE NOT NULL
 		);
 	`
@@ -243,7 +244,7 @@ func (s *Store) GetRooms() ([]Room, error) {
 func (s *Store) CreateRooms(rooms []models.Room) error {
 	query := `INSERT INTO rooms (id, name, nb_users, price, created_at) VALUES (?, ?, ?, ?, ?)`
 	for _, room := range rooms {
-		_, err := s.db.Exec(query, room.Id, room.Name, room.NbUsers, room.Price*100, time.Now())
+		_, err := s.db.Exec(query, room.Id, room.Name, room.NbUsers, room.Price, time.Now())
 
 		if err != nil {
 			return err
@@ -251,4 +252,27 @@ func (s *Store) CreateRooms(rooms []models.Room) error {
 	}
 
 	return nil
+}
+
+func (s *Store) GetRoomByName(name string) (*models.Room, error) {
+	var room models.Room
+
+	query := `SELECT id, name, nb_users, price FROM rooms WHERE name = ? LIMIT 1;`
+
+	err := s.db.QueryRow(query, name).Scan(
+		&room.Id,
+		&room.Name,
+		&room.NbUsers,
+		&room.Price,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("No room matching your query. \n\n Please try ./cosoft rooms to see available ones.")
+		}
+		return nil, err
+	}
+
+	return &room, nil
+
 }
