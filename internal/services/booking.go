@@ -212,10 +212,8 @@ func (s *Service) createCalendarRow(
 		nextIsNow := nextSlot.Equal(now)
 
 		if isNow {
-			// If current time, display a red pipe,
-			// And replace the hour separation with the same red pipe if the time is round.
-			timeCursor := lipgloss.NewStyle().Foreground(lipgloss.Color("#f45656")).Render("│")
-			symbol = timeCursor + symbol
+			// If current time, color the cell's background in red,
+			symbol = lipgloss.NewStyle().Background(lipgloss.Color("#f45656")).Render(symbol)
 		}
 
 		if counter%4 == 3 && !nextIsNow {
