@@ -15,7 +15,6 @@ import (
 
 type ReservationListModel struct {
 	phase        int
-	loading      bool
 	confirmed    bool
 	bookingId    string
 	reservations api.FutureBookingsResponse
@@ -33,7 +32,6 @@ func NewReservationListModel() *ReservationListModel {
 
 	return &ReservationListModel{
 		phase:     1,
-		loading:   true,
 		confirmed: false,
 		spinner:   s,
 		bookingId: "",
@@ -58,7 +56,6 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return rl, cmd
 
 	case futureBookingMsg:
-		rl.loading = false
 		if msg.err != nil {
 			rl.err = msg.err
 			return rl, nil
@@ -75,7 +72,6 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return rl, rl.form.Init()
 
 	case cancelComplete:
-		rl.loading = false
 		rl.phase = 4
 		return rl, nil
 	}
@@ -92,7 +88,6 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if rl.form.State == huh.StateCompleted {
 		rl.phase = 3
-		rl.loading = true
 		return rl, tea.Batch(rl.spinner.Tick, rl.cancelReservation())
 	}
 
