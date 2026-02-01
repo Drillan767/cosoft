@@ -14,13 +14,12 @@ import (
 )
 
 type ReservationListModel struct {
-	loading      bool
 	phase        int
-	spinner      spinner.Model
-	bookingId    string
-	form         *huh.Form
 	confirmed    bool
+	bookingId    string
 	reservations api.FutureBookingsResponse
+	form         *huh.Form
+	spinner      spinner.Model
 	err          error
 }
 
@@ -31,14 +30,12 @@ func NewReservationListModel() *ReservationListModel {
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
 
-	rl := &ReservationListModel{
-		phase:     0,
-		loading:   true,
-		confirmed: true,
+	return &ReservationListModel{
+		phase:     1,
+		confirmed: false,
 		spinner:   s,
+		bookingId: "",
 	}
-
-	return rl
 }
 
 func (rl *ReservationListModel) Init() tea.Cmd {
@@ -51,45 +48,36 @@ func (rl *ReservationListModel) Init() tea.Cmd {
 func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	switch rl.phase {
-	case 1:
-		m, c := rl.form.Update(msg)
-		rl.form = m.(*huh.Form)
-		cmd = c
-	}
-
 	switch msg := msg.(type) {
 
-	case futureBookingMsg:
-		rl.loading = false
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		rl.spinner, cmd = rl.spinner.Update(msg)
+		return rl, cmd
 
+	case futureBookingMsg:
 		if msg.err != nil {
 			rl.err = msg.err
 			return rl, nil
 		}
 
 		rl.reservations = *msg.bookings
+		rl.phase = 2
+
 		if err := rl.buildForm(); err != nil {
 			rl.err = err
 			return rl, nil
 		}
 
-		rl.phase = 1
 		return rl, rl.form.Init()
 
 	case cancelComplete:
-		rl.loading = false
-		rl.phase = 3
+		rl.phase = 4
 		return rl, nil
-
-	case spinner.TickMsg:
-		var cmd tea.Cmd
-		rl.spinner, cmd = rl.spinner.Update(msg)
-		return rl, cmd
 	}
 
 	if rl.form == nil {
-		return rl, cmd
+		return rl, nil
 	}
 
 	form, cmd := rl.form.Update(msg)
@@ -99,8 +87,7 @@ func (rl *ReservationListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if rl.form.State == huh.StateCompleted {
-		rl.phase = 2
-		rl.loading = true
+		rl.phase = 3
 		return rl, tea.Batch(rl.spinner.Tick, rl.cancelReservation())
 	}
 
@@ -113,72 +100,26 @@ func (rl *ReservationListModel) View() string {
 	}
 
 	switch rl.phase {
-	case 0:
-		if rl.loading {
-			return fmt.Sprintf("\n %s Loading reservations...\n", rl.spinner.View())
-		}
 	case 1:
-		return rl.form.View()
+		return rl.spinner.View() + " Loading reservations..."
 	case 2:
-		if rl.loading {
-			return fmt.Sprintf("\n %s Cancelling reservation...\n", rl.spinner.View())
+		if len(rl.reservations.Data) == 0 {
+			return "No reservations found \n\n Press \"ESC\" to go back to the main menu."
 		}
+		return rl.form.View()
 	case 3:
-		success := lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Render("✓ Booking cancelled successfully!")
-		toolTip := "You can now press \"ESC\" to go back to the main menu."
+		return rl.spinner.View() + " Cancelling reservations..."
+	case 4:
+		success := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("42")).
+			Render("✓ Cancellation complete!")
 
-		return success + "\n\n" + toolTip
-	}
+		tooltip := "You can now press \"ESC\" to go back to the main menu."
 
-	return "My reservations"
-}
+		return success + "\n\n" + tooltip
+	default:
+		return "Reservations"
 
-func (rl *ReservationListModel) fetchFutureBookings() tea.Cmd {
-	return func() tea.Msg {
-		authService, err := services.NewService()
-
-		if err != nil {
-			return futureBookingMsg{err: err}
-		}
-
-		user, err := authService.GetAuthData()
-
-		if err != nil {
-			return futureBookingMsg{err: err}
-		}
-
-		apiClient := api.NewApi()
-		bookings, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
-
-		return futureBookingMsg{
-			bookings: bookings,
-			err:      err,
-		}
-	}
-}
-
-func (rl *ReservationListModel) cancelReservation() tea.Cmd {
-	return func() tea.Msg {
-		authService, err := services.NewService()
-
-		if err != nil {
-			return futureBookingMsg{err: err}
-		}
-
-		user, err := authService.GetAuthData()
-
-		if err != nil {
-			return futureBookingMsg{err: err}
-		}
-
-		apiClient := api.NewApi()
-		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.bookingId)
-
-		if err != nil {
-			return futureBookingMsg{err: err}
-		}
-
-		return cancelComplete{}
 	}
 }
 
@@ -214,7 +155,8 @@ func (rl *ReservationListModel) buildForm() error {
 
 	rl.form = huh.NewForm(
 		huh.NewGroup(
-			components.NewListField(list, "Pick a reservation to cancel it").Value(&rl.bookingId),
+			components.NewListField(list, "Pick a reservation to cancel it").
+				Value(&rl.bookingId),
 			huh.NewConfirm().
 				Title("Confirm cancellation?").
 				Negative("No").
@@ -224,4 +166,53 @@ func (rl *ReservationListModel) buildForm() error {
 	)
 
 	return nil
+}
+
+func (rl *ReservationListModel) cancelReservation() tea.Cmd {
+	return func() tea.Msg {
+		authService, err := services.NewService()
+
+		if err != nil {
+			return futureBookingMsg{err: err}
+		}
+
+		user, err := authService.GetAuthData()
+
+		if err != nil {
+			return futureBookingMsg{err: err}
+		}
+
+		apiClient := api.NewApi()
+		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.bookingId)
+
+		if err != nil {
+			return futureBookingMsg{err: err}
+		}
+
+		return cancelComplete{}
+	}
+}
+
+func (rl *ReservationListModel) fetchFutureBookings() tea.Cmd {
+	return func() tea.Msg {
+		authService, err := services.NewService()
+
+		if err != nil {
+			return futureBookingMsg{err: err}
+		}
+
+		user, err := authService.GetAuthData()
+
+		if err != nil {
+			return futureBookingMsg{err: err}
+		}
+
+		apiClient := api.NewApi()
+		bookings, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
+
+		return futureBookingMsg{
+			bookings: bookings,
+			err:      err,
+		}
+	}
 }

@@ -95,9 +95,6 @@ func (m *LandingModel) Init() tea.Cmd {
 		m.form.Init(),
 		m.spinner.Tick,
 		m.calendarSpinner.Tick,
-		m.form.Init(),
-		m.spinner.Tick,
-		m.calendarSpinner.Tick,
 		func() tea.Msg {
 			return startFetchingMsg{}
 		},
@@ -154,9 +151,8 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case futureBookingMsg:
 		if msg.err != nil {
-			m.loading = false
-			m.buildForm()
-			return m, m.form.Init()
+			m.err = msg.err
+			return m, nil
 		}
 		m.futureBookings = msg.bookings
 		m.loading = false
