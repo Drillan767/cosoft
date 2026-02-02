@@ -23,6 +23,7 @@ type LandingModel struct {
 	futureBookings  *api.FutureBookingsResponse
 	loading         bool
 	loadingCalendar bool
+	roomsReady      bool
 	err             error
 }
 
@@ -38,6 +39,10 @@ type updatedCreditsMsg struct {
 type calendarMsg struct {
 	calendar string
 	err      error
+}
+
+type roomsReadyMsg struct {
+	err error
 }
 
 type startFetchingMsg struct{}
@@ -141,12 +146,27 @@ func (m *LandingModel) updateCredits() tea.Cmd {
 	}
 }
 
+func (m *LandingModel) ensureRoomsStored() tea.Cmd {
+	return func() tea.Msg {
+		authService, err := services.NewService()
+
+		if err != nil {
+			return roomsReadyMsg{err: err}
+		}
+
+		err = authService.EnsureRoomsStored()
+
+		return roomsReadyMsg{err: err}
+	}
+}
+
 func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case startFetchingMsg:
 		return m, tea.Batch(
 			m.fetchFutureBookings(),
 			m.updateCredits(),
+			m.ensureRoomsStored(),
 		)
 
 	case futureBookingMsg:
@@ -157,7 +177,21 @@ func (m *LandingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.futureBookings = msg.bookings
 		m.loading = false
 		m.buildForm() // Rebuild form with updated data
-		return m, tea.Batch(m.form.Init(), m.getCalendarView())
+		if m.roomsReady {
+			return m, tea.Batch(m.form.Init(), m.getCalendarView())
+		}
+		return m, m.form.Init()
+
+	case roomsReadyMsg:
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		m.roomsReady = true
+		if m.futureBookings != nil {
+			return m, m.getCalendarView()
+		}
+		return m, nil
 
 	case calendarMsg:
 		m.loadingCalendar = false
@@ -235,12 +269,6 @@ func (m *LandingModel) GetSelection() *models.Selection {
 func (m *LandingModel) getCalendarView() tea.Cmd {
 	return func() tea.Msg {
 		authService, err := services.NewService()
-
-		if err != nil {
-			return calendarMsg{err: err}
-		}
-
-		err = authService.EnsureRoomsStored()
 
 		if err != nil {
 			return calendarMsg{err: err}
