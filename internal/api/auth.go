@@ -85,9 +85,6 @@ func extractRefreshToken(cookies []string) string {
 
 func (a *Api) GetAuth(wAuth, wAuthRefresh string) error {
 
-	type Result struct {
-	}
-
 	req, client, err := a.prepareHeaderCookies(
 		wAuth,
 		wAuthRefresh,
@@ -150,5 +147,26 @@ func (a *Api) GetCredits(wAuth, wAuthRefresh string) (float64, error) {
 	}
 
 	return response.User.Credits, nil
+}
 
+func (a *Api) Logout(wAuth, wAuthRefresh string) error {
+	req, client, err := a.prepareHeaderCookies(
+		wAuth,
+		wAuthRefresh,
+		"POST",
+		fmt.Sprintf("%s/users/logout", apiUrl),
+		nil,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	return err
 }

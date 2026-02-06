@@ -16,6 +16,7 @@ type AppModel struct {
 	quickBookModel       *QuickBookModel
 	browseModel          *BrowseModel
 	reservationListModel *ReservationListModel
+	settingsModel        *SettingsModel
 	// Add others
 }
 
@@ -37,6 +38,7 @@ func NewAppModel(startPage string, allowBackNav bool) *AppModel {
 		quickBookModel:       NewQuickBookModel(),
 		browseModel:          NewBrowseModel(),
 		reservationListModel: NewReservationListModel(),
+		settingsModel:        NewSettingsModel(),
 		// Add others
 	}
 }
@@ -51,6 +53,8 @@ func (m *AppModel) Init() tea.Cmd {
 		return m.browseModel.Init()
 	case "reservations":
 		return m.reservationListModel.Init()
+	case "settings":
+		return m.settingsModel.Init()
 	default:
 		return m.landingModel.Init()
 	}
@@ -76,6 +80,9 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "reservations":
 			m.reservationListModel = NewReservationListModel()
 			return m, m.reservationListModel.Init()
+		case "settings":
+			m.settingsModel = NewSettingsModel()
+			return m, m.settingsModel.Init()
 		default:
 			return m, nil
 		}
@@ -93,6 +100,10 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Handle ESC BEFORE forwarding to child models
 		if msg.String() == "esc" && m.allowBackNav && m.currentPage != PageLanding {
+			if m.currentPage == PageSettings && m.settingsModel.ShouldQuitOnEsc() {
+				m.quitting = true
+				return m, tea.Quit
+			}
 			m.currentPage = PageLanding
 			m.landingModel = NewLandingModel()
 			return m, m.landingModel.Init()
@@ -117,6 +128,10 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		newModel, cmd := m.reservationListModel.Update(msg)
 		m.reservationListModel = newModel.(*ReservationListModel)
 		return m, cmd
+	case PageSettings:
+		newModel, cmd := m.settingsModel.Update(msg)
+		m.settingsModel = newModel.(*SettingsModel)
+		return m, cmd
 		// Add other pages here as you create them
 	}
 
@@ -138,6 +153,8 @@ func (m *AppModel) View() string {
 		return m.browseModel.View()
 	case PageReservations:
 		return m.reservationListModel.View()
+	case PageSettings:
+		return m.settingsModel.View()
 	// Others
 	default:
 		return "unknown page"
