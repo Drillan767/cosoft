@@ -30,6 +30,10 @@ func NewStore(dbPath string) (*Store, error) {
 	return &Store{db: db}, nil
 }
 
+func (s *Store) Close() error {
+	return s.db.Close()
+}
+
 func (s *Store) SetupDatabase(dbPath string) error {
 
 	query := `

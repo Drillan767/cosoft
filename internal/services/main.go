@@ -1,10 +1,11 @@
 package services
 
 import (
+	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/storage"
 	"fmt"
-	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type Service struct {
@@ -24,6 +25,29 @@ func NewService() (*Service, error) {
 	}, nil
 }
 
-func (s *Service) prepareHeaderCookies() (*http.Request, error) {
-	return nil, nil
+func (s *Service) ClearData() error {
+	// Disconnect user from api
+	user, err := s.GetAuthData()
+
+	if err != nil {
+		return err
+	}
+
+	clientApi := api.NewApi()
+	err = clientApi.Logout(user.WAuth, user.WAuthRefresh)
+
+	if err != nil {
+		return err
+	}
+
+	s.store.Close()
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return err
+	}
+
+	cosoftDir := filepath.Join(configDir, "cosoft")
+
+	return os.RemoveAll(cosoftDir)
 }

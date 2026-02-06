@@ -100,6 +100,10 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Handle ESC BEFORE forwarding to child models
 		if msg.String() == "esc" && m.allowBackNav && m.currentPage != PageLanding {
+			if m.currentPage == PageSettings && m.settingsModel.ShouldQuitOnEsc() {
+				m.quitting = true
+				return m, tea.Quit
+			}
 			m.currentPage = PageLanding
 			m.landingModel = NewLandingModel()
 			return m, m.landingModel.Init()
