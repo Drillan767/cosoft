@@ -68,3 +68,8 @@ All these functions are available directly from the main command itself.
 | `rooms`   | List all available rooms                            |
 
 
+## Slack (development)
+
+```
+ssh -N -R 1111:localhost:1111 joseph@xxxxxxx.org
+```
