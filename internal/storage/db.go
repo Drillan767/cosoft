@@ -67,11 +67,20 @@ func (s *Store) SetupDatabase(dbPath string) error {
 	return nil
 }
 
-func (s *Store) HasActiveToken() (*Cookies, error) {
-	query := `SELECT w_auth, w_auth_refresh FROM users LIMIT 1`
+func (s *Store) HasActiveToken(slackUserID *string) (*Cookies, error) {
+	var query string
+	// Using []interface{} to avoid duplicating the QueryRow().Scan() call in each branch
+	var args []interface{}
+
+	if slackUserID != nil {
+		query = `SELECT w_auth, w_auth_refresh FROM users WHERE slack_user_id = ?`
+		args = append(args, *slackUserID)
+	} else {
+		query = `SELECT w_auth, w_auth_refresh FROM users LIMIT 1`
+	}
 
 	var result Cookies
-	err := s.db.QueryRow(query).Scan(
+	err := s.db.QueryRow(query, args...).Scan(
 		&result.WAuth,
 		&result.WAuthRefresh,
 	)
@@ -86,24 +95,25 @@ func (s *Store) HasActiveToken() (*Cookies, error) {
 	return &result, nil
 }
 
-func (s *Store) SetUser(user *api.UserResponse, wAuth, wAuthRefresh string) error {
-	var nbUsers int
+func (s *Store) SetUser(user *api.UserResponse, wAuth, wAuthRefresh string, slackUserID *string) error {
+	var existingUserID string
+	var countQuery string
+	var countArgs []interface{}
 
-	rows, err := s.db.Query("SELECT COUNT(*) FROM users;")
+	if slackUserID != nil {
+		countQuery = "SELECT id FROM users WHERE slack_user_id = ?;"
+		countArgs = append(countArgs, *slackUserID)
+	} else {
+		countQuery = "SELECT id FROM users LIMIT 1;"
+	}
 
-	if err != nil {
+	err := s.db.QueryRow(countQuery, countArgs...).Scan(&existingUserID)
+
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 
-	defer rows.Close()
-
-	for rows.Next() {
-		if err := rows.Scan(&nbUsers); err != nil {
-			return err
-		}
-	}
-
-	if nbUsers == 0 {
+	if existingUserID == "" {
 		query := `
 		        INSERT INTO users (id, email, first_name, last_name, credits, w_auth, w_auth_refresh, slack_user_id, created_at)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -128,30 +138,32 @@ func (s *Store) SetUser(user *api.UserResponse, wAuth, wAuthRefresh string) erro
 			user.Credits,
 			wAuth,
 			wAuthRefresh,
-			nil,
+			slackUserID,
 			time.Now(),
 		)
 
 		return err
-	} else if nbUsers == 1 {
-		query := `UPDATE users SET w_auth = ?, w_auth_refresh = ? WHERE id = ?`
-		_, err := s.db.Exec(query, wAuth, wAuthRefresh, user.Id)
-
-		return err
 	}
 
-	return errors.New("too many users")
+	query := `UPDATE users SET w_auth = ?, w_auth_refresh = ? WHERE id = ?`
+	_, err = s.db.Exec(query, wAuth, wAuthRefresh, existingUserID)
+
+	return err
 }
 
-func (s *Store) GetUserData() (*User, error) {
-
+func (s *Store) GetUserData(slackUserID *string) (*User, error) {
 	var user User
+	var query string
+	var args []interface{}
 
-	query := `
-		SELECT id, first_name, last_name, email, w_auth, w_auth_refresh, credits, slack_user_id, created_at FROM users LIMIT 1;
-	`
+	if slackUserID != nil {
+		query = `SELECT id, first_name, last_name, email, w_auth, w_auth_refresh, credits, slack_user_id, created_at FROM users WHERE slack_user_id = ?;`
+		args = append(args, *slackUserID)
+	} else {
+		query = `SELECT id, first_name, last_name, email, w_auth, w_auth_refresh, credits, slack_user_id, created_at FROM users LIMIT 1;`
+	}
 
-	err := s.db.QueryRow(query).Scan(
+	err := s.db.QueryRow(query, args...).Scan(
 		&user.Id,
 		&user.FirstName,
 		&user.LastName,
@@ -170,15 +182,23 @@ func (s *Store) GetUserData() (*User, error) {
 	return &user, nil
 }
 
-func (s *Store) LogoutUser() error {
-	query := `DELETE FROM users`
+func (s *Store) LogoutUser(slackUserID *string) error {
+	var query string
+	var args []interface{}
 
-	_, err := s.db.Exec(query)
+	if slackUserID != nil {
+		query = `DELETE FROM users WHERE slack_user_id = ?`
+		args = append(args, *slackUserID)
+	} else {
+		query = `DELETE FROM users`
+	}
+
+	_, err := s.db.Exec(query, args...)
 
 	return err
 }
 
-func (s *Store) UpdateCredits() (*float64, error) {
+func (s *Store) UpdateCredits(slackUserID *string) (*float64, error) {
 	type UserCookies struct {
 		Id      string  `db:"id"`
 		Credits float64 `db:"credits"`
@@ -188,11 +208,17 @@ func (s *Store) UpdateCredits() (*float64, error) {
 
 	uc := UserCookies{}
 
-	query := `
-		SELECT id, credits, w_auth, w_auth_refresh FROM users LIMIT 1
-	`
+	var query string
+	var args []interface{}
 
-	err := s.db.QueryRow(query).Scan(
+	if slackUserID != nil {
+		query = `SELECT id, credits, w_auth, w_auth_refresh FROM users WHERE slack_user_id = ?`
+		args = append(args, *slackUserID)
+	} else {
+		query = `SELECT id, credits, w_auth, w_auth_refresh FROM users LIMIT 1`
+	}
+
+	err := s.db.QueryRow(query, args...).Scan(
 		&uc.Id,
 		&uc.Credits,
 		&uc.Auth,
