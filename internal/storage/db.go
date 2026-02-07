@@ -34,7 +34,7 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-func (s *Store) SetupDatabase(dbPath string) error {
+func (s *Store) SetupDatabase() error {
 
 	query := `
 		CREATE TABLE IF NOT EXISTS users (
