@@ -16,7 +16,7 @@ import (
 )
 
 func (s *Service) UpdateCredits() (*float64, error) {
-	return s.store.UpdateCredits()
+	return s.store.UpdateCredits(nil)
 }
 
 func (s *Service) EnsureRoomsStored() error {
@@ -30,7 +30,7 @@ func (s *Service) EnsureRoomsStored() error {
 		return nil
 	}
 
-	authData, err := s.store.GetUserData()
+	authData, err := s.store.GetUserData(nil)
 
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reser
 		return nil, err
 	}
 
-	authData, err := s.store.GetUserData()
+	authData, err := s.store.GetUserData(nil)
 
 	if err != nil {
 		return nil, err
@@ -235,7 +235,7 @@ func (s *Service) NonInteractiveBooking(
 	name string,
 	dt time.Time,
 ) (string, error) {
-	user, err := s.store.GetUserData()
+	user, err := s.store.GetUserData(nil)
 
 	if err != nil {
 		return "", err
