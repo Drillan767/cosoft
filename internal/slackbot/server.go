@@ -26,8 +26,10 @@ func (b *Bot) StartServer() {
 				ResponseUrl: r.Form.Get("response_url"),
 			}
 
+			debug(slackRequest)
+
 			fmt.Println(slackRequest)
-			w.Write([]byte(slackRequest.Text))
+			w.Write([]byte(slackRequest.ResponseUrl))
 
 		}),
 	}
