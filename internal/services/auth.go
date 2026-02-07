@@ -7,7 +7,7 @@ import (
 
 func (s *Service) IsAuthenticated() bool {
 
-	cookies, err := s.store.HasActiveToken()
+	cookies, err := s.store.HasActiveToken(nil)
 
 	if err != nil || cookies == nil {
 		return false
@@ -20,13 +20,13 @@ func (s *Service) IsAuthenticated() bool {
 }
 
 func (s *Service) SaveAuthData(user *api.UserResponse) error {
-	return s.store.SetUser(user, user.JwtToken, user.RefreshToken)
+	return s.store.SetUser(user, user.JwtToken, user.RefreshToken, nil)
 }
 
 func (s *Service) Logout() error {
-	return s.store.LogoutUser()
+	return s.store.LogoutUser(nil)
 }
 
 func (s *Service) GetAuthData() (*storage.User, error) {
-	return s.store.GetUserData()
+	return s.store.GetUserData(nil)
 }
