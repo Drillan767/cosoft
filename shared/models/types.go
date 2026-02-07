@@ -33,3 +33,10 @@ type RoomUsage struct {
 	Id        string
 	UsedSlots []UnavailableSlot
 }
+
+type Request struct {
+	UserId      string
+	Command     string
+	Text        string
+	ResponseUrl string
+}

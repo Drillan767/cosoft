@@ -1,6 +1,9 @@
 package slackbot
 
 import (
+	"cosoft-cli/internal/slackbot/services"
+	"cosoft-cli/shared/models"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,17 +22,23 @@ func (b *Bot) StartServer() {
 				fmt.Println(err)
 			}
 
-			slackRequest := Request{
+			slackRequest := models.Request{
 				Command:     r.Form.Get("command"),
 				Text:        r.Form.Get("text"),
 				UserId:      r.Form.Get("user_id"),
 				ResponseUrl: r.Form.Get("response_url"),
 			}
 
-			debug(slackRequest)
+			blocks := services.ParseSlackCommand(slackRequest)
 
-			fmt.Println(slackRequest)
-			w.Write([]byte(slackRequest.ResponseUrl))
+			jsonBlocks, err := json.Marshal(blocks)
+
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonBlocks)
 
 		}),
 	}
