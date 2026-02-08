@@ -72,7 +72,7 @@ func (s *SlackService) DisplayLogin(request models.Request) {
 	}
 }
 
-func (s *SlackService) LogInUser(email, password string) (*api.UserResponse, error) {
+func (s *SlackService) LogInUser(email, password, responseUrl string) (*api.UserResponse, error) {
 	apiClient := api.NewApi()
 
 	loginPayload := api.LoginPayload{
@@ -86,5 +86,14 @@ func (s *SlackService) LogInUser(email, password string) (*api.UserResponse, err
 		return nil, err
 	}
 
+	s.postLogin(responseUrl)
+
 	return response, nil
+}
+
+func (s *SlackService) postLogin(responseUrl string) {
+	/*
+		1. Send blocks payload to display the main menu to the response url
+		2. Create / update the user in the database based on the response
+	*/
 }

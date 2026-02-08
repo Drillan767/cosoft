@@ -118,10 +118,10 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	// I'll leave a comment to say I have no comment to do.
 	email := viewResponse.View.State.Values.Email.Email.Value
 	password := viewResponse.View.State.Values.Password.Password.Value
-	// TODO: extract the responseUrl here for when auth is complete
+	responseUrl := viewResponse.PrivateMetadata
 
 	// Note: not sure if we need to interact with the user's response here
-	_, err = s.LogInUser(email, password)
+	_, err = s.LogInUser(email, password, responseUrl)
 
 	if err != nil {
 		feedback := LoginFeedback{

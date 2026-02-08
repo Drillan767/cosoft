@@ -83,7 +83,8 @@ type SlackLoginResponse struct {
 		AppInstalledTeamID string `json:"app_installed_team_id"`
 		BotID              string `json:"bot_id"`
 	} `json:"view"`
-	ResponseUrls        []any `json:"response_urls"`
-	IsEnterpriseInstall bool  `json:"is_enterprise_install"`
-	Enterprise          any   `json:"enterprise"`
+	ResponseUrls        []any  `json:"response_urls"`
+	IsEnterpriseInstall bool   `json:"is_enterprise_install"`
+	Enterprise          any    `json:"enterprise"`
+	PrivateMetadata     string `json:"private_metadata"`
 }
