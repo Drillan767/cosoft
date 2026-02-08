@@ -11,15 +11,16 @@ type ModalAction struct {
 }
 
 type Modal struct {
-	Type       string         `json:"type"`
-	CallbackId string         `json:"callback_id"`
-	Title      ModalTitle     `json:"title"`
-	Blocks     []BlockElement `json:"blocks"`
-	Close      ModalAction    `json:"close"`
-	Submit     ModalAction    `json:"submit"`
+	Type            string         `json:"type"`
+	CallbackId      string         `json:"callback_id"`
+	Title           ModalTitle     `json:"title"`
+	Blocks          []BlockElement `json:"blocks"`
+	Close           ModalAction    `json:"close"`
+	Submit          ModalAction    `json:"submit"`
+	PrivateMetadata string         `json:"private_metadata"`
 }
 
-func NewLogin() Modal {
+func NewLogin(responseUrl string) Modal {
 	return Modal{
 		Type:       "modal",
 		CallbackId: "login_modal",
@@ -35,6 +36,7 @@ func NewLogin() Modal {
 			Type: "plain_text",
 			Text: "Connexion",
 		},
+		PrivateMetadata: responseUrl,
 		Blocks: []BlockElement{
 			NewInput("Email", "email"),
 			NewInput("Mot de passe", "password"),

@@ -39,7 +39,7 @@ func (s *SlackService) DisplayLogin(request models.Request) {
 		View      slack.Modal `json:"view"`
 	}
 
-	loginForm := slack.NewLogin()
+	loginForm := slack.NewLogin(request.ResponseUrl)
 
 	loginWrapper := LoginWrapper{
 		TriggerId: request.TriggerId,
@@ -61,7 +61,6 @@ func (s *SlackService) DisplayLogin(request models.Request) {
 	}
 
 	accessToken := os.Getenv("SLACK_ACCESS_TOKEN")
-
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+accessToken)
 
@@ -71,4 +70,21 @@ func (s *SlackService) DisplayLogin(request models.Request) {
 		fmt.Println(err)
 		return
 	}
+}
+
+func (s *SlackService) LogInUser(email, password string) (*api.UserResponse, error) {
+	apiClient := api.NewApi()
+
+	loginPayload := api.LoginPayload{
+		Email:    email,
+		Password: password,
+	}
+
+	response, err := apiClient.Login(&loginPayload)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }

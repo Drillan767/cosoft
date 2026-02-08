@@ -5,11 +5,19 @@ import (
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
 )
+
+type LoginFailedPayload struct {
+	Password string `json:"password"`
+}
+
+type LoginFeedback struct {
+	ResponseAction string              `json:"response_action"`
+	Errors         *LoginFailedPayload `json:"errors,omitempty"`
+}
 
 func (b *Bot) StartServer() {
 	s := http.Server{
@@ -23,6 +31,8 @@ func (b *Bot) StartServer() {
 				break
 			case "/interact":
 				b.handleInteractions(w, r)
+			default:
+				fmt.Println("Unknown URL", r.URL.String())
 			}
 		}),
 	}
@@ -78,141 +88,76 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonBlocks)
 }
 
-/** EXAMPLE RESPONSE PAYLOAD
-{
-	"type":"view_submission",
-	"team":{
-		"id":"T0ADB9JET2L",
-		"domain":"cosoftlamaudite"
-	},
-	"user":{
-		"id":"U0ACAJPPR7D",
-		"username":"joseph",
-		"name":"joseph",
-		"team_id":"T0ADB9JET2L"
-	},
-	"api_app_id":"A0ACEV21BN2",
-	"token":"J3r5ymWUxW5vyU7w66kQYtEF",
-	"trigger_id":"10479377324721.10453324503088.b25873bd2eb05eb5303316f8fa763a46",
-	"view":{
-		"id":"V0ADNBLJFRU",
-		"team_id":"T0ADB9JET2L",
-		"type":"modal",
-		"blocks":[
-			{
-				"type":"input",
-				"block_id":"email",
-				"label":{
-					"type":"plain_text",
-					"text":"Email",
-					"emoji":true
-				},
-				"optional":false,
-				"dispatch_action":false,
-				"element":{
-					"type":"plain_text_input",
-					"action_id":"email",
-					"dispatch_action_config":{
-						"trigger_actions_on":[
-							"on_enter_pressed"
-						]
-					}
-				}
-			},
-			{
-				"type":"input",
-				"block_id":"password",
-				"label":{
-					"type":"plain_text",
-					"text":"Mot de passe",
-					"emoji":true
-				},
-				"optional":false,
-				"dispatch_action":false,
-				"element":{
-					"type":"plain_text_input",
-					"action_id":"password",
-					"dispatch_action_config":{
-						"trigger_actions_on":[
-							"on_enter_pressed"
-						]
-					}
-				}
-			},
-			{
-				"type":"context",
-				"block_id":"uFpGL",
-				"elements":[
-					{
-						"type":"plain_text",
-						"text":":warning: Le mot de passe est affich\u00e9 en clair dans le champ",
-						"emoji":true
-					}
-				]
-			}
-		],
-		"private_metadata":"",
-		"callback_id":"login_modal",
-		"state":{
-			"values":{
-				"email":{
-					"email":{
-						"type":"plain_text_input",
-						"value":"asdsadasd"
-					}
-				},
-				"password":{
-					"password":{
-						"type":"plain_text_input",
-						"value":"rgfdfgdfgdfgd"
-					}
-				}
-			}
-		},
-		"hash":"1770556275.Ls40d2cz",
-		"title":{
-			"type":"plain_text",
-			"text":"Connexion",
-			"emoji":true
-		},
-		"clear_on_close":false,
-		"notify_on_close":false,
-		"close":{
-			"type":"plain_text",
-			"text":"Fermer",
-			"emoji":true
-		},
-		"submit":{
-			"type":"plain_text",
-			"text":"Connexion",
-			"emoji":true
-		},
-		"previous_view_id":null,
-		"root_view_id":"V0ADNBLJFRU",
-		"app_id":"A0ACEV21BN2",
-		"external_id":"",
-		"app_installed_team_id":"T0ADB9JET2L",
-		"bot_id":"B0ACDHD0Y21"
-	},
-	"response_urls":[
-
-	],
-	"is_enterprise_install":false,
-	"enterprise":null
-}
-*/
-
 func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	err := r.ParseForm()
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	debug(string(body))
+	payload := r.Form.Get("payload")
+	debug(payload)
+
+	var viewResponse models.SlackLoginResponse
+
+	err = json.Unmarshal([]byte(payload), &viewResponse)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	s, err := services.NewSlackService()
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// I'll leave a comment to say I have no comment to do.
+	email := viewResponse.View.State.Values.Email.Email.Value
+	password := viewResponse.View.State.Values.Password.Password.Value
+	// TODO: extract the responseUrl here for when auth is complete
+
+	// Note: not sure if we need to interact with the user's response here
+	_, err = s.LogInUser(email, password)
+
+	if err != nil {
+		feedback := LoginFeedback{
+			ResponseAction: "errors",
+			Errors: &LoginFailedPayload{
+				Password: "Identifiant / mot de passe incorrect",
+			},
+		}
+
+		jsonValue, err := json.Marshal(feedback)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(jsonValue)
+
+		fmt.Println(err)
+		return
+	}
+
+	feedback := LoginFeedback{
+		ResponseAction: "clear",
+	}
+
+	jsonValue, err := json.Marshal(feedback)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte("OK"))
+	w.Write(jsonValue)
 	return
 }
 
