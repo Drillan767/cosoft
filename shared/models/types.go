@@ -41,3 +41,6 @@ type Request struct {
 	ResponseUrl string
 	TriggerId   string
 }
+
+type SlackLoginPayload struct {
+}
