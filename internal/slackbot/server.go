@@ -27,6 +27,22 @@ func (b *Bot) StartServer() {
 				Text:        r.Form.Get("text"),
 				UserId:      r.Form.Get("user_id"),
 				ResponseUrl: r.Form.Get("response_url"),
+				TriggerId:   r.Form.Get("trigger_id"),
+			}
+
+			s, err := services.NewSlackService()
+
+			if err != nil {
+				fmt.Println(err)
+				w.Write([]byte(err.Error()))
+				return
+			}
+
+			authenticated := s.IsSlackAuthenticated(slackRequest)
+
+			if !authenticated {
+				s.DisplayLogin(slackRequest)
+				return
 			}
 
 			blocks := services.ParseSlackCommand(slackRequest)
