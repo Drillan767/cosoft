@@ -39,4 +39,5 @@ type Request struct {
 	Command     string
 	Text        string
 	ResponseUrl string
+	TriggerId   string
 }
