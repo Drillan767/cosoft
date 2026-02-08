@@ -36,9 +36,9 @@ func NewLogin() Modal {
 			Text: "Connexion",
 		},
 		Blocks: []BlockElement{
-			NewMrkDwn("Bjr"),
 			NewInput("Email", "email"),
 			NewInput("Mot de passe", "password"),
+			NewContext(":warning: Le mot de passe est affiché en clair dans le champ"),
 		},
 	}
 }

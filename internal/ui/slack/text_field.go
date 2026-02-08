@@ -5,15 +5,10 @@ type InputPayload struct {
 	ActionId string `json:"action_id"`
 }
 
-type LabelPayload struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
 type Input struct {
 	Type     string       `json:"type"`
 	Element  InputPayload `json:"element"`
-	Label    LabelPayload `json:"label"`
+	Label    BlockPayload `json:"label"`
 	Optional bool         `json:"optional"`
 }
 
@@ -26,9 +21,10 @@ func NewInput(label, name string) Input {
 			Type:     "plain_text_input",
 			ActionId: name,
 		},
-		Label: LabelPayload{
-			Type: "plain_text",
-			Text: label,
+		Label: BlockPayload{
+			Type:  "plain_text",
+			Text:  label,
+			Emoji: true,
 		},
 		Optional: false,
 	}
