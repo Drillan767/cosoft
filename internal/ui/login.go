@@ -178,7 +178,7 @@ func (m *LoginModel) GetUser() *api.UserResponse {
 	return m.user
 }
 
-// LoginFormWithLayout creates a login form wrapped in a layout
+// LoginForm creates a login form wrapped in a layout
 func (ui *UI) LoginForm() (*LoginModel, error) {
 	loginModel := NewLoginModel()
 
