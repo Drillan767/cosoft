@@ -76,7 +76,11 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	blocks := services.ParseSlackCommand(slackRequest)
+	blocks, err := s.ParseSlackCommand(slackRequest)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	jsonBlocks, err := json.Marshal(blocks)
 
