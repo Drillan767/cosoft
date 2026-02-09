@@ -1,23 +1,19 @@
 package services
 
 import (
-	"cosoft-cli/internal/ui/slack"
-	"cosoft-cli/shared/models"
+	"cosoft-cli/internal/storage"
 )
 
-func ParseSlackCommand(request models.Request) slack.Block {
-	switch request.Text {
-	case "book":
-		return slack.Block{
-			Blocks: []slack.BlockElement{
-				slack.NewMrkDwn("Bro wants a *meeting room*"),
-			},
-		}
-	default:
-		return slack.Block{
-			Blocks: []slack.BlockElement{
-				slack.NewMrkDwn("Bro doesn't want *anything*"),
-			},
-		}
+type SlackService struct {
+	store *storage.Store
+}
+
+func NewSlackService() (*SlackService, error) {
+	store, err := storage.NewStore("./slack/database.db")
+
+	if err != nil {
+		return nil, err
 	}
+
+	return &SlackService{store}, nil
 }
