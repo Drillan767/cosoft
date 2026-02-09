@@ -115,19 +115,19 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// I'll leave a comment to say I have no comment to do.
+	// PTSD from Drupal 8's forms overriding.
 	email := viewResponse.View.State.Values.Email.Email.Value
 	password := viewResponse.View.State.Values.Password.Password.Value
-	responseUrl := viewResponse.PrivateMetadata
+	responseUrl := viewResponse.View.PrivateMetadata
+	slackUserId := viewResponse.User.ID
 
-	// Note: not sure if we need to interact with the user's response here
-	_, err = s.LogInUser(email, password, responseUrl)
+	err = s.LogInUser(email, password, slackUserId, responseUrl)
 
 	if err != nil {
 		feedback := LoginFeedback{
 			ResponseAction: "errors",
 			Errors: &LoginFailedPayload{
-				Password: "Identifiant / mot de passe incorrect",
+				Password: err.Error(),
 			},
 		}
 

@@ -38,6 +38,7 @@ func NewLogin(responseUrl string) Modal {
 		},
 		PrivateMetadata: responseUrl,
 		Blocks: []BlockElement{
+			NewMrkDwn(":information_source:  Pour réserver une salle, il faut d'abord vous identifier."),
 			NewInput("Email", "email"),
 			NewInput("Mot de passe", "password"),
 			NewContext(":warning: Le mot de passe est affiché en clair dans le champ"),
