@@ -1,6 +1,7 @@
 package slackbot
 
 import (
+	"bytes"
 	"cosoft-cli/internal/slackbot/services"
 	"cosoft-cli/shared/models"
 	"encoding/json"
@@ -51,6 +52,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	slackRequest := models.Request{
@@ -61,35 +63,47 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 		TriggerId:   r.Form.Get("trigger_id"),
 	}
 
-	s, err := services.NewSlackService()
+	w.WriteHeader(http.StatusOK)
 
-	if err != nil {
-		fmt.Println(err)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	go func() {
+		s, err := services.NewSlackService()
 
-	authenticated := s.IsSlackAuthenticated(slackRequest)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-	if !authenticated {
-		s.DisplayLogin(slackRequest)
-		return
-	}
+		authenticated := s.IsSlackAuthenticated(slackRequest)
 
-	blocks, err := s.ParseSlackCommand(slackRequest)
+		if !authenticated {
+			s.DisplayLogin(slackRequest)
+			return
+		}
 
-	if err != nil {
-		fmt.Println(err)
-	}
+		blocks, err := s.ParseSlackCommand(slackRequest)
 
-	jsonBlocks, err := json.Marshal(blocks)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-	if err != nil {
-		fmt.Println(err)
-	}
+		jsonBlocks, err := json.Marshal(blocks)
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonBlocks)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		req, err := http.NewRequest("POST", slackRequest.ResponseUrl, bytes.NewBuffer(jsonBlocks))
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		req.Header.Set("Content-Type", "application/json")
+		http.DefaultClient.Do(req)
+	}()
 }
 
 func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {

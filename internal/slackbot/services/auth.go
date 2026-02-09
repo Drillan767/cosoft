@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/storage"
 	"cosoft-cli/internal/ui/slack"
 	"cosoft-cli/shared/models"
 	"encoding/json"
@@ -104,8 +105,14 @@ func (s *SlackService) postLogin(user api.UserResponse, slackUserId, responseUrl
 	}
 
 	// Display main menu with user's info
+	storedUser := storage.User{
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		Credits:   user.Credits,
+	}
 
-	mainMenu := slack.MainMenu()
+	mainMenu := slack.MainMenu(storedUser)
 
 	jsonMenu, err := json.Marshal(mainMenu)
 
