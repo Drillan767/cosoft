@@ -19,6 +19,14 @@ func MainMenu(user storage.User) Block {
 		Blocks: []BlockElement{
 			NewMrkDwn(welcomeMessage),
 			NewMrkDwn(creditsMessage),
+			NewDivider(),
+			NewHeader("Menu principal"),
+			NewMenuItem(
+				"Réserver immédiatement une salle de réunion",
+				"Accéder",
+				"quick-book",
+				"quick-book",
+			),
 		},
 	}
 }
