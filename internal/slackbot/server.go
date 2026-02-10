@@ -2,7 +2,6 @@ package slackbot
 
 import (
 	"bytes"
-	"cosoft-cli/internal/slackbot/services"
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
@@ -66,12 +65,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	go func() {
-		s, err := services.NewSlackService()
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		s := b.service
 
 		authenticated := s.IsSlackAuthenticated(slackRequest)
 
@@ -132,6 +126,8 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		return
 	}
+
+	s := b.service
 
 	// PTSD from Drupal 8's forms overriding.
 	email := viewResponse.View.State.Values.Email.Email.Value

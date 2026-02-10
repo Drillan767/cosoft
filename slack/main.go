@@ -2,6 +2,7 @@ package main
 
 import (
 	"cosoft-cli/internal/slackbot"
+	"cosoft-cli/internal/slackbot/services"
 	"cosoft-cli/internal/storage"
 	"log"
 )
@@ -20,6 +21,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	bot := slackbot.NewBot()
+	service := services.NewSlackService(store)
+	bot := slackbot.NewBot(service)
 	bot.StartServer()
 }
