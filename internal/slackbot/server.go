@@ -66,16 +66,15 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"response_type":"ephemeral","text":"Chargement en cours..."}`))
 
 	go func() {
-		s := b.service
 
-		authenticated := s.IsSlackAuthenticated(slackRequest)
+		authenticated := b.service.IsSlackAuthenticated(slackRequest)
 
 		if !authenticated {
-			s.DisplayLogin(slackRequest)
+			b.service.DisplayLogin(slackRequest)
 			return
 		}
 
-		blocks, err := s.ParseSlackCommand(slackRequest)
+		blocks, err := b.service.ParseSlackCommand(slackRequest)
 
 		if err != nil {
 			fmt.Println(err)
@@ -146,15 +145,13 @@ func (b *Bot) handleLoginModal(payload string, w http.ResponseWriter) {
 		return
 	}
 
-	s := b.service
-
 	// PTSD from Drupal 8's forms overriding.
 	email := viewResponse.View.State.Values.Email.Email.Value
 	password := viewResponse.View.State.Values.Password.Password.Value
 	responseUrl := viewResponse.View.PrivateMetadata
 	slackUserId := viewResponse.User.ID
 
-	err = s.LogInUser(email, password, slackUserId, responseUrl)
+	err = b.service.LogInUser(email, password, slackUserId, responseUrl)
 
 	if err != nil {
 		feedback := LoginFeedback{
@@ -204,32 +201,22 @@ func (b *Bot) handleMenuAction(payload string, w http.ResponseWriter) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	actionName := action.Actions[0].ActionID
 
-	go func() {
-		s := b.service
-
-		actionName := action.Actions[0].ActionID
-
-		switch actionName {
-		case "main-menu":
-			err = s.ShowMainMenu(action)
-			if err != nil {
+	switch actionName {
+	case "main-menu":
+		w.WriteHeader(http.StatusOK)
+		go func() {
+			if err := b.service.ShowMainMenu(action); err != nil {
 				fmt.Println(err)
-				return
 			}
-
-			break
-		case "quick-book":
-			err = s.ShowQuickBook(action)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			break
+		}()
+	case "quick-book":
+		if err := b.service.ShowQuickBook(action); err != nil {
+			fmt.Println(err)
 		}
-	}()
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 func debug(payload interface{}) {

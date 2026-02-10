@@ -9,9 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
 func (s *SlackService) IsSlackAuthenticated(request models.Request) bool {
@@ -28,49 +25,20 @@ func (s *SlackService) IsSlackAuthenticated(request models.Request) bool {
 }
 
 func (s *SlackService) DisplayLogin(request models.Request) {
-	err := godotenv.Load()
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	type LoginWrapper struct {
-		TriggerId string      `json:"trigger_id"`
-		View      slack.Modal `json:"view"`
-	}
-
 	loginForm := slack.NewLogin(request.ResponseUrl)
 
-	loginWrapper := LoginWrapper{
+	loginWrapper := slack.ModalWrapper{
 		TriggerId: request.TriggerId,
 		View:      loginForm,
 	}
 
-	jsonBlocks, err := json.Marshal(loginWrapper)
+	err := s.DispatchModal(loginWrapper)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	req, err := http.NewRequest("POST", "https://slack.com/api/views.open", bytes.NewBuffer(jsonBlocks))
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	accessToken := os.Getenv("SLACK_ACCESS_TOKEN")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+accessToken)
-
-	_, err = http.DefaultClient.Do(req)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 }
 
 func (s *SlackService) LogInUser(email, password, slackUserId, responseUrl string) error {

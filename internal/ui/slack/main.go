@@ -15,3 +15,8 @@ type BlockPayload struct {
 	Type  string `json:"type"`
 	Emoji bool   `json:"emoji"`
 }
+
+type ChoicePayload struct {
+	Text  string
+	Value string
+}

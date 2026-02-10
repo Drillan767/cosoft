@@ -5,7 +5,9 @@ import (
 	"cosoft-cli/internal/ui/slack"
 	"cosoft-cli/shared/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
 )
 
 func (s *SlackService) ParseSlackCommand(request models.Request) (*slack.Block, error) {
@@ -44,10 +46,49 @@ func (s *SlackService) UpdateMessage(responseUrl string, blocks slack.Block) err
 	return err
 }
 
-func (s *SlackService) ShowQuickBook(action models.MenuSelection) error {
-	blocks := slack.QuickBookMenu()
+func (s *SlackService) DispatchModal(wrapper slack.ModalWrapper) error {
+	jsonBlocks, err := json.Marshal(wrapper)
 
-	return s.UpdateMessage(action.ResponseURL, blocks)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "https://slack.com/api/views.open", bytes.NewBuffer(jsonBlocks))
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(jsonBlocks))
+
+	accessToken := os.Getenv("SLACK_ACCESS_TOKEN")
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", "Bearer "+accessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != 200 {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		fmt.Println("Error dispatching modal:", buf.String())
+	}
+
+	return nil
+}
+
+func (s *SlackService) ShowQuickBook(action models.MenuSelection) error {
+	modal := slack.NewQuickbook(action.ResponseURL)
+
+	wrapper := slack.ModalWrapper{
+		TriggerId: action.TriggerID,
+		View:      modal,
+	}
+
+	return s.DispatchModal(wrapper)
 }
 
 func (s *SlackService) ShowMainMenu(action models.MenuSelection) error {

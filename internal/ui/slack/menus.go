@@ -22,19 +22,10 @@ func MainMenu(user storage.User) Block {
 			NewDivider(),
 			NewHeader("Menu principal"),
 			NewMenuItem(
-				"Réserver immédiatement une salle de réunion",
+				"*Réservation rapide*\nRéserver immédiatement une salle de réunion",
 				"Accéder",
 				"quick-book",
 			),
-		},
-	}
-}
-
-func QuickBookMenu() Block {
-	return Block{
-		Blocks: []BlockElement{
-			NewHeader("Réservation rapide"),
-			NewButtons([]ButtonBlockPayload{{"Retour", "main-menu"}}),
 		},
 	}
 }

@@ -12,14 +12,9 @@ type Button struct {
 	Elements []ButtonPayload `json:"elements"`
 }
 
-type ButtonBlockPayload struct {
-	Text  string
-	Value string
-}
-
 func (Button) blockElement() {}
 
-func NewButtons(buttons []ButtonBlockPayload) Button {
+func NewButtons(buttons []ChoicePayload) Button {
 	elements := make([]ButtonPayload, len(buttons))
 
 	for i, button := range buttons {
