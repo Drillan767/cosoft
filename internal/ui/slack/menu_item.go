@@ -1,12 +1,5 @@
 package slack
 
-type ButtonPayload struct {
-	Type     string       `json:"type"`
-	Text     BlockPayload `json:"text"`
-	Value    string       `json:"value"`
-	ActionId string       `json:"action_id"`
-}
-
 type MenuItem struct {
 	Mrkdwn
 	Accessory ButtonPayload `json:"accessory"`
@@ -14,7 +7,7 @@ type MenuItem struct {
 
 func (MenuItem) blockElement() {}
 
-func NewMenuItem(text, btnText, value, actionId string) MenuItem {
+func NewMenuItem(text, btnText, value string) MenuItem {
 	return MenuItem{
 		Mrkdwn{
 			Type: "section",
@@ -30,7 +23,7 @@ func NewMenuItem(text, btnText, value, actionId string) MenuItem {
 				Text:  btnText,
 				Emoji: true,
 			},
-			ActionId: actionId,
+			ActionId: value,
 			Value:    value,
 		},
 	}

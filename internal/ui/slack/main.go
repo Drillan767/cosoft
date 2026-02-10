@@ -5,7 +5,9 @@ type BlockElement interface {
 }
 
 type Block struct {
-	Blocks []BlockElement `json:"blocks"`
+	ReplaceOriginal bool           `json:"replace_original,omitempty"`
+	ResponseType    string         `json:"response_type,omitempty"`
+	Blocks          []BlockElement `json:"blocks"`
 }
 
 type BlockPayload struct {

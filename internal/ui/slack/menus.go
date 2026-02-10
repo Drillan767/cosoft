@@ -25,8 +25,16 @@ func MainMenu(user storage.User) Block {
 				"Réserver immédiatement une salle de réunion",
 				"Accéder",
 				"quick-book",
-				"quick-book",
 			),
+		},
+	}
+}
+
+func QuickBookMenu() Block {
+	return Block{
+		Blocks: []BlockElement{
+			NewHeader("Réservation rapide"),
+			NewButtons([]ButtonBlockPayload{{"Retour", "main-menu"}}),
 		},
 	}
 }

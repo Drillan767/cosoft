@@ -62,7 +62,8 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 		TriggerId:   r.Form.Get("trigger_id"),
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write([]byte(`{"response_type":"ephemeral","text":"Chargement en cours..."}`))
 
 	go func() {
 		s := b.service
@@ -80,6 +81,8 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			return
 		}
+
+		blocks.ResponseType = "ephemeral"
 
 		jsonBlocks, err := json.Marshal(blocks)
 
@@ -111,16 +114,32 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	payload := r.Form.Get("payload")
 	debug(payload)
 
-	var viewResponse models.SlackLoginResponse
+	// Discovering what's being sent to us
+	var envelope struct {
+		Type string `json:"type"`
+	}
 
-	err = json.Unmarshal([]byte(payload), &viewResponse)
+	err = json.Unmarshal([]byte(payload), &envelope)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	s, err := services.NewSlackService()
+	switch envelope.Type {
+	case "view_submission":
+		b.handleLoginModal(payload, w)
+		break
+	case "block_actions":
+		b.handleMenuAction(payload, w)
+		break
+	}
+}
+
+func (b *Bot) handleLoginModal(payload string, w http.ResponseWriter) {
+	var viewResponse models.SlackLoginResponse
+
+	err := json.Unmarshal([]byte(payload), &viewResponse)
 
 	if err != nil {
 		fmt.Println(err)
@@ -173,6 +192,44 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonValue)
 	return
+}
+
+func (b *Bot) handleMenuAction(payload string, w http.ResponseWriter) {
+	var action models.MenuSelection
+
+	err := json.Unmarshal([]byte(payload), &action)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	go func() {
+		s := b.service
+
+		actionName := action.Actions[0].ActionID
+
+		switch actionName {
+		case "main-menu":
+			err = s.ShowMainMenu(action)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			break
+		case "quick-book":
+			err = s.ShowQuickBook(action)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			break
+		}
+	}()
 }
 
 func debug(payload interface{}) {
