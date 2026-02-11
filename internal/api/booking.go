@@ -301,8 +301,8 @@ func (a *Api) getRoomsInfoFromResponse(response AvailableRoomsResponse) ([]model
 	rooms := make([]models.Room, 0, len(response.UnvisitedItems)+len(response.VisitedItems))
 	for _, room := range response.VisitedItems {
 
-		// Filter out Hubmit and Clhub
-		if room.NbUsers > 10 {
+		// Filter out Hubmit
+		if room.Name == "HUBMIT" {
 			continue
 		}
 
@@ -318,8 +318,8 @@ func (a *Api) getRoomsInfoFromResponse(response AvailableRoomsResponse) ([]model
 
 	for _, room := range response.UnvisitedItems {
 
-		// Filter out Hubmit and Clhub
-		if room.NbUsers > 10 {
+		// Filter out Hubmit
+		if room.Name == "HUBMIT" {
 			continue
 		}
 

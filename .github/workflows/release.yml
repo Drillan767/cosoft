@@ -32,7 +32,7 @@ jobs:
           GOOS=darwin GOARCH=arm64 go build -o meeting-room-booker-darwin-arm64
           
           # Windows
-          GOOS=windows GOARCH=amd64 go build -o meeting-room-booker-windows-amd64.exe
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=1 go build -o meeting-room-booker-windows-amd64.exe
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
