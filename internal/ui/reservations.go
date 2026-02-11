@@ -139,6 +139,10 @@ func (rl *ReservationListModel) buildForm() error {
 			return err
 		}
 
+		duration := parsedEnd.Sub(parsedStart).Minutes()
+
+		paidPrice := r.Credits * (float64(duration) / 60)
+
 		dateFormat := "02/01/2006 15:04"
 
 		list[i] = components.Item[string]{
@@ -148,7 +152,7 @@ func (rl *ReservationListModel) buildForm() error {
 				"%s → %s · %.02f credits",
 				parsedStart.Format(dateFormat),
 				parsedEnd.Format(dateFormat),
-				r.Credits,
+				paidPrice,
 			),
 		}
 	}
