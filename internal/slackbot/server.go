@@ -127,11 +127,35 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 
 	switch envelope.Type {
 	case "view_submission":
-		b.handleLoginModal(payload, w)
+		b.handleModalAction(payload, w)
 		break
 	case "block_actions":
 		b.handleMenuAction(payload, w)
 		break
+	}
+}
+
+func (b *Bot) handleModalAction(payload string, w http.ResponseWriter) {
+	type Modal struct {
+		View struct {
+			CallbackID string `json:"callback_id"`
+		} `json:"view"`
+	}
+
+	var modal Modal
+
+	err := json.Unmarshal([]byte(payload), &modal)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	switch modal.View.CallbackID {
+	case "login_modal":
+		b.handleLoginModal(payload, w)
+	case "quickbook_modal":
+		b.handleQuickbookModal(payload, w)
 	}
 }
 
@@ -189,6 +213,23 @@ func (b *Bot) handleLoginModal(payload string, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonValue)
 	return
+}
+
+func (b *Bot) handleQuickbookModal(payload string, w http.ResponseWriter) {
+	var viewResponse models.SlackQuickBookResponse
+
+	err := json.Unmarshal([]byte(payload), &viewResponse)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// lmao.
+	duration := viewResponse.View.State.Values.Duration.Duration.SelectedOption.Value
+	nbPeople := viewResponse.View.State.Values.NbPeople.NbPeople.SelectedOption.Value
+
+	fmt.Println(duration, nbPeople)
 }
 
 func (b *Bot) handleMenuAction(payload string, w http.ResponseWriter) {

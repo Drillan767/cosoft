@@ -59,8 +59,6 @@ func (s *SlackService) DispatchModal(wrapper slack.ModalWrapper) error {
 		return err
 	}
 
-	fmt.Println(string(jsonBlocks))
-
 	accessToken := os.Getenv("SLACK_ACCESS_TOKEN")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+accessToken)

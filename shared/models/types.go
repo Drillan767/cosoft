@@ -88,6 +88,57 @@ type SlackLoginResponse struct {
 	Enterprise          any   `json:"enterprise"`
 }
 
+type SlackQuickBookResponse struct {
+	Type string `json:"type"`
+	User struct {
+		ID       string `json:"id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		TeamID   string `json:"team_id"`
+	} `json:"user"`
+	APIAppID  string `json:"api_app_id"`
+	Token     string `json:"token"`
+	TriggerID string `json:"trigger_id"`
+	View      struct {
+		ID              string `json:"id"`
+		TeamID          string `json:"team_id"`
+		Type            string `json:"type"`
+		PrivateMetadata string `json:"private_metadata"`
+		CallbackID      string `json:"callback_id"`
+		State           struct {
+			Values struct {
+				Duration struct {
+					Duration struct {
+						Type           string `json:"type"`
+						SelectedOption struct {
+							Text struct {
+								Type  string `json:"type"`
+								Text  string `json:"text"`
+								Emoji bool   `json:"emoji"`
+							} `json:"text"`
+							Value string `json:"value"`
+						} `json:"selected_option"`
+					} `json:"duration"`
+				} `json:"duration"`
+				NbPeople struct {
+					NbPeople struct {
+						Type           string `json:"type"`
+						SelectedOption struct {
+							Text struct {
+								Type  string `json:"type"`
+								Text  string `json:"text"`
+								Emoji bool   `json:"emoji"`
+							} `json:"text"`
+							Value string `json:"value"`
+						} `json:"selected_option"`
+					} `json:"nbPeople"`
+				} `json:"nbPeople"`
+			} `json:"values"`
+		} `json:"state"`
+		Hash string `json:"hash"`
+	} `json:"view"`
+}
+
 type MenuSelection struct {
 	Type string `json:"type"`
 	User struct {
