@@ -56,6 +56,15 @@ func (s *Store) SetupDatabase() error {
 			price REAL NOT NULL DEFAULT 0,
 			created_at DATE NOT NULL
 		);
+
+		CREATE TABLE IF NOT EXISTS slack_messages (
+		    id VARCHAR(40) PRIMARY KEY NOT NULL,
+		    slack_user_id VARCHAR(50) NOT NULL,
+		    slack_message_id VARCHAR(50) NOT NULL,
+		    payload BLOB NOT NULL,
+		    message_type TEXT CHECK ( message_type IN ('main', 'quick_book', 'browse') ) NOT NULL,
+		    created_at DATE NOT NULL
+		)
 	`
 
 	_, err := s.db.Exec(query)

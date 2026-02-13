@@ -2,6 +2,7 @@ package slackbot
 
 import (
 	"bytes"
+	"cosoft-cli/internal/ui/slack"
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
@@ -67,14 +68,25 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 
 	go func() {
 
-		authenticated := b.service.IsSlackAuthenticated(slackRequest)
+		// authenticated := b.service.IsSlackAuthenticated(slackRequest)
 
-		if !authenticated {
-			b.service.DisplayLogin(slackRequest)
-			return
+		/*
+			if !authenticated {
+				b.service.DisplayLogin(slackRequest)
+				return
+			}
+
+		*/
+
+		blocks := slack.Block{
+			Blocks: []slack.BlockElement{
+				slack.NewMrkDwn(":information_source:  Pour réserver une salle, il faut d'abord vous identifier."),
+				slack.NewInput("Email", "email"),
+				slack.NewInput("Mot de passe", "password"),
+				slack.NewContext(":warning: Le mot de passe est affiché en clair dans le champ"),
+				slack.NewButtons([]slack.ChoicePayload{{"Connexion", "login"}}),
+			},
 		}
-
-		blocks, err := b.service.ParseSlackCommand(slackRequest)
 
 		if err != nil {
 			fmt.Println(err)
@@ -130,6 +142,12 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 		b.handleModalAction(payload, w)
 		break
 	case "block_actions":
+		// TODO:
+		// - Read view from DB using slack_message_id
+		// - view = view.Update
+		// - Write view to DB
+		// - RenderView() => slack.Block
+		// - Send to Slack
 		b.handleMenuAction(payload, w)
 		break
 	}
@@ -234,6 +252,8 @@ func (b *Bot) handleQuickbookModal(payload string, w http.ResponseWriter) {
 
 func (b *Bot) handleMenuAction(payload string, w http.ResponseWriter) {
 	var action models.MenuSelection
+
+	fmt.Println(payload)
 
 	err := json.Unmarshal([]byte(payload), &action)
 
