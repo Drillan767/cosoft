@@ -68,3 +68,24 @@ All these functions are available directly from the main command itself.
 | `rooms`   | List all available rooms                            |
 
 
+# Installation
+
+1. Download the compiled binary of your choice at the latest release available [here](https://github.com/Drillan767/cosoft/releases).
+2. In the directory where the binary has been downloaded run the following commands:
+
+Linux / MacOS:
+
+```bash
+chmod +x  meeting-room-booker-{os}-{processor} # Allows the program to be run
+sudo mv meeting-room-booker-{os}-{processor} /usr/local/bin/cosoft
+```
+
+You can now run `cosoft` from anywhere in your terminal.
+
+Windows:
+
+Feel free to rename the program as you like and place it anywhere you'll remember, then:
+
+1. Search for "cmd" in the start menu
+2. Once the terminal opened, change the directory to get to where the program is
+3. Type `meeting-room-booker-windows-amd64.exe` and hit the "enter" key.
