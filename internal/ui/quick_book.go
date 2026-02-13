@@ -290,13 +290,15 @@ func (qb *QuickBookModel) generateTable() string {
 	endTime := startTime.Add(time.Duration(qb.payload.Duration) * time.Minute)
 	dateFormat := "02/01/2006 15:04"
 
+	paidPrice := qb.bookedRoom.Price * (float64(qb.payload.Duration) / 60)
+
 	headers := []string{"ROOM", "DURATION", "COST"}
 
 	rows := [][]string{
 		{
 			qb.bookedRoom.Name,
 			fmt.Sprintf("%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
-			fmt.Sprintf("%.2f credits", qb.bookedRoom.Price),
+			fmt.Sprintf("%.2f credits", paidPrice),
 		},
 	}
 

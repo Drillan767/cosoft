@@ -297,13 +297,15 @@ func (b *BrowseModel) generateTable() string {
 	endTime := dt.Add(time.Duration(b.browsePayload.Duration) * time.Minute)
 	dateFormat := "02/01/2006 15:04"
 
+	paidPrice := b.bookedRoom.Price * (float64(b.browsePayload.Duration) / 60)
+
 	headers := []string{"ROOM", "DURATION", "COST"}
 
 	rows := [][]string{
 		{
 			b.bookedRoom.Name,
 			fmt.Sprintf("%s → %s", dt.Format(dateFormat), endTime.Format(dateFormat)),
-			fmt.Sprintf("%.2f credits", b.bookedRoom.Price),
+			fmt.Sprintf("%.2f credits", paidPrice),
 		},
 	}
 
