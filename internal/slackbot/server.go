@@ -1,8 +1,7 @@
 package slackbot
 
 import (
-	"bytes"
-	"cosoft-cli/internal/ui/slack"
+	"cosoft-cli/internal/slackbot/views"
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
@@ -10,15 +9,6 @@ import (
 	"net/http"
 	"os"
 )
-
-type LoginFailedPayload struct {
-	Password string `json:"password"`
-}
-
-type LoginFeedback struct {
-	ResponseAction string              `json:"response_action"`
-	Errors         *LoginFailedPayload `json:"errors,omitempty"`
-}
 
 func (b *Bot) StartServer() {
 	s := http.Server{
@@ -63,54 +53,45 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 		TriggerId:   r.Form.Get("trigger_id"),
 	}
 
+	// Clear out user's old slack states
+	err = b.service.ClearUserStates(slackRequest)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(`{"response_type":"ephemeral","text":"Chargement en cours..."}`))
 
 	go func() {
+		view, err := b.service.AuthGuard(slackRequest)
 
-		// authenticated := b.service.IsSlackAuthenticated(slackRequest)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
 
-		/*
-			if !authenticated {
-				b.service.DisplayLogin(slackRequest)
+		if view != nil {
+			blocks := views.RenderView(view)
+			err = b.service.SendToSlack(slackRequest.ResponseUrl, blocks)
+
+			if err != nil {
+				fmt.Println(err)
 				return
 			}
-
-		*/
-
-		blocks := slack.Block{
-			Blocks: []slack.BlockElement{
-				slack.NewMrkDwn(":information_source:  Pour réserver une salle, il faut d'abord vous identifier."),
-				slack.NewInput("Email", "email"),
-				slack.NewInput("Mot de passe", "password"),
-				slack.NewContext(":warning: Le mot de passe est affiché en clair dans le champ"),
-				slack.NewButtons([]slack.ChoicePayload{{"Connexion", "login"}}),
-			},
 		}
+
+		mainMenu := views.LandingView{}
+
+		blocks := views.RenderView(&mainMenu)
+
+		err = b.service.SendToSlack(slackRequest.ResponseUrl, blocks)
 
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-
-		blocks.ResponseType = "ephemeral"
-
-		jsonBlocks, err := json.Marshal(blocks)
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		req, err := http.NewRequest("POST", slackRequest.ResponseUrl, bytes.NewBuffer(jsonBlocks))
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		req.Header.Set("Content-Type", "application/json")
-		http.DefaultClient.Do(req)
 	}()
 }
 
@@ -138,9 +119,6 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch envelope.Type {
-	case "view_submission":
-		b.handleModalAction(payload, w)
-		break
 	case "block_actions":
 		// TODO:
 		// - Read view from DB using slack_message_id
@@ -148,135 +126,8 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 		// - Write view to DB
 		// - RenderView() => slack.Block
 		// - Send to Slack
-		b.handleMenuAction(payload, w)
+		// b.handleMenuAction(payload, w)
 		break
-	}
-}
-
-func (b *Bot) handleModalAction(payload string, w http.ResponseWriter) {
-	type Modal struct {
-		View struct {
-			CallbackID string `json:"callback_id"`
-		} `json:"view"`
-	}
-
-	var modal Modal
-
-	err := json.Unmarshal([]byte(payload), &modal)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	switch modal.View.CallbackID {
-	case "login_modal":
-		b.handleLoginModal(payload, w)
-	case "quickbook_modal":
-		b.handleQuickbookModal(payload, w)
-	}
-}
-
-func (b *Bot) handleLoginModal(payload string, w http.ResponseWriter) {
-	var viewResponse models.SlackLoginResponse
-
-	err := json.Unmarshal([]byte(payload), &viewResponse)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// PTSD from Drupal 8's forms overriding.
-	email := viewResponse.View.State.Values.Email.Email.Value
-	password := viewResponse.View.State.Values.Password.Password.Value
-	responseUrl := viewResponse.View.PrivateMetadata
-	slackUserId := viewResponse.User.ID
-
-	err = b.service.LogInUser(email, password, slackUserId, responseUrl)
-
-	if err != nil {
-		feedback := LoginFeedback{
-			ResponseAction: "errors",
-			Errors: &LoginFailedPayload{
-				Password: err.Error(),
-			},
-		}
-
-		jsonValue, err := json.Marshal(feedback)
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonValue)
-
-		fmt.Println(err)
-		return
-	}
-
-	feedback := LoginFeedback{
-		ResponseAction: "clear",
-	}
-
-	jsonValue, err := json.Marshal(feedback)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonValue)
-	return
-}
-
-func (b *Bot) handleQuickbookModal(payload string, w http.ResponseWriter) {
-	var viewResponse models.SlackQuickBookResponse
-
-	err := json.Unmarshal([]byte(payload), &viewResponse)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// lmao.
-	duration := viewResponse.View.State.Values.Duration.Duration.SelectedOption.Value
-	nbPeople := viewResponse.View.State.Values.NbPeople.NbPeople.SelectedOption.Value
-
-	fmt.Println(duration, nbPeople)
-}
-
-func (b *Bot) handleMenuAction(payload string, w http.ResponseWriter) {
-	var action models.MenuSelection
-
-	fmt.Println(payload)
-
-	err := json.Unmarshal([]byte(payload), &action)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	actionName := action.Actions[0].ActionID
-
-	switch actionName {
-	case "main-menu":
-		w.WriteHeader(http.StatusOK)
-		go func() {
-			if err := b.service.ShowMainMenu(action); err != nil {
-				fmt.Println(err)
-			}
-		}()
-	case "quick-book":
-		if err := b.service.ShowQuickBook(action); err != nil {
-			fmt.Println(err)
-		}
-		w.WriteHeader(http.StatusOK)
 	}
 }
 

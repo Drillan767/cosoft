@@ -99,3 +99,33 @@ func (s *SlackService) ShowMainMenu(action models.MenuSelection) error {
 	blocks := slack.MainMenu(*user)
 	return s.UpdateMessage(action.ResponseURL, blocks)
 }
+
+func (s *SlackService) SendToSlack(responseUrl string, blocks slack.Block) error {
+
+	type BlockWrapper struct {
+		ResponseType string `json:"response_type"`
+		Blocks       slack.Block
+	}
+
+	wrapper := BlockWrapper{
+		ResponseType: "ephemeral",
+		Blocks:       blocks,
+	}
+
+	jsonBlocks, err := json.Marshal(wrapper)
+
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", responseUrl, bytes.NewBuffer(jsonBlocks))
+
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	_, err = http.DefaultClient.Do(req)
+
+	return err
+}
