@@ -365,7 +365,7 @@ func (s *Store) GetSlackState(slackUserId string) (*SlackState, error) {
 }
 
 func (s *Store) ResetUserSlackState(slackUserID string) error {
-	query := `DELETE FROM users WHERE slack_user_id = ?`
+	query := `DELETE FROM slack_messages WHERE slack_user_id = ?`
 
 	_, err := s.db.Exec(query, slackUserID)
 

@@ -49,7 +49,15 @@ func (s *SlackService) HandleInteraction(payload string) error {
 				loginView.Error = &errMsg
 			}
 		} else {
-			newView = &views.LandingView{}
+			user, err := s.store.GetUserData(&result.User.ID)
+
+			if err != nil {
+				return err
+			}
+
+			newView = &views.LandingView{
+				User: *user,
+			}
 		}
 	}
 

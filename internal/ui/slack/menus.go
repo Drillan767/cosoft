@@ -26,6 +26,11 @@ func MainMenu(user storage.User) Block {
 				"Accéder",
 				"quick-book",
 			),
+			NewMenuItem(
+				"*Parcourir les salles*\nRéserver une salle pour une date ultérieure",
+				"Accéder",
+				"browse",
+			),
 		},
 	}
 }

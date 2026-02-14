@@ -3,6 +3,7 @@ package services
 import (
 	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/slackbot/views"
+	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
 )
 
@@ -33,6 +34,10 @@ func (s *SlackService) AuthGuard(request models.Request) (*views.LoginView, erro
 
 func (s *SlackService) ClearUserStates(request models.Request) error {
 	return s.store.ResetUserSlackState(request.UserId)
+}
+
+func (s *SlackService) GetUserData(userId string) (*storage.User, error) {
+	return s.store.GetUserData(&userId)
 }
 
 func (s *SlackService) LogInUser(email, password, slackUserId string) error {
