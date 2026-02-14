@@ -42,6 +42,15 @@ func (s *SlackService) HandleInteraction(payload string) error {
 	switch c := cmd.(type) {
 	case *views.LoginCmd:
 		err = s.LogInUser(c.Email, c.Password, result.User.ID)
+
+		if err != nil {
+			errMsg := ":red_circle: Identifiant / mot de passe incorrect"
+			if loginView, ok := newView.(*views.LoginView); ok {
+				loginView.Error = &errMsg
+			}
+		} else {
+			newView = &views.LandingView{}
+		}
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)

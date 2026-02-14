@@ -38,20 +38,21 @@ func (l *LoginView) Update(action Action) (View, Cmd) {
 	err := json.Unmarshal(action.Values, &values)
 	if err != nil {
 		fmt.Println(err)
-		return nil, nil
+		return nil, err
 	}
 
 	l.Email = values.Email.Email.Value
 	l.Password = values.Password.Password.Value
+	l.Error = nil
 
 	if l.Email == "" || l.Password == "" {
-		s := "Tous les champs sont requis"
+		s := ":warning: Tous les champs sont requis"
 		l.Error = &s
 
 		return l, nil
 	}
 
-	return l, LoginCmd{
+	return l, &LoginCmd{
 		Email:    l.Email,
 		Password: l.Password,
 	}
