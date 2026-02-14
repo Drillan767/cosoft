@@ -6,6 +6,7 @@ import (
 	"cosoft-cli/internal/ui/slack"
 	"cosoft-cli/shared/models"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -31,6 +32,10 @@ func (s *SlackService) HandleInteraction(payload string) error {
 
 		if err != nil {
 			return err
+		}
+
+		if view == nil {
+			return fmt.Errorf("no active view for user %s", result.User.ID)
 		}
 	}
 

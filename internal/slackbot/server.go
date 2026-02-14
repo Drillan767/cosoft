@@ -92,6 +92,14 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 		mainMenu := views.LandingView{
 			User: *user,
 		}
+
+		err = b.service.SetSlackState(slackRequest.UserId, "landing", &mainMenu)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 		blocks := views.RenderView(&mainMenu)
 		err = b.service.SendToSlack(slackRequest.ResponseUrl, blocks)
 
