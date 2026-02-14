@@ -1,6 +1,6 @@
 package slack
 
-type ButtonPayload struct {
+type _ButtonPayload struct {
 	Type     string       `json:"type"`
 	Text     BlockPayload `json:"text"`
 	Value    string       `json:"value"`
