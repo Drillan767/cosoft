@@ -64,6 +64,16 @@ func (s *SlackService) HandleInteraction(payload string) error {
 				User: *user,
 			}
 		}
+	case *views.LandingCmd:
+		user, err := s.store.GetUserData(&result.User.ID)
+
+		if err != nil {
+			return err
+		}
+
+		newView = &views.LandingView{
+			User: *user,
+		}
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)
@@ -74,6 +84,10 @@ func (s *SlackService) HandleInteraction(payload string) error {
 
 	blocks := views.RenderView(newView)
 	return s.SendToSlack(result.ResponseURL, blocks)
+}
+
+func (s *SlackService) SetSlackState(slackUserId, messageType string, state any) error {
+	return s.store.SetSlackState(slackUserId, messageType, state)
 }
 
 func (s *SlackService) SendToSlack(responseUrl string, blocks slack.Block) error {

@@ -9,11 +9,13 @@ type LandingView struct {
 	User storage.User
 }
 
+type LandingCmd struct{}
+
 func (lv *LandingView) Update(action Action) (View, Cmd) {
 
 	switch action.ActionID {
 	case "quick-book":
-		return lv, nil
+		return &QuickBookView{}, nil
 
 	default:
 		return lv, nil

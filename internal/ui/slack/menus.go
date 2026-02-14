@@ -34,3 +34,45 @@ func MainMenu(user storage.User) Block {
 		},
 	}
 }
+
+func QuickBookMenu() Block {
+	durationChoices := []ChoicePayload{
+		{
+			"30 minutes",
+			"30",
+		},
+		{
+			"1 heure",
+			"60",
+		},
+		{
+			"1 heure 30",
+			"90",
+		},
+		{
+			"2 heures",
+			"120",
+		},
+	}
+
+	nbPeopleChoices := []ChoicePayload{
+		{
+			"Une personne",
+			"1",
+		},
+		{
+			"Deux personnes ou plus",
+			"2",
+		},
+	}
+
+	return Block{
+		Blocks: []BlockElement{
+			NewHeader("Réservation rapide"),
+			NewRadio("Durée de réservation", "duration", durationChoices),
+			NewDivider(),
+			NewRadio("Taille de la salle", "nbPeople", nbPeopleChoices),
+			NewButtons([]ChoicePayload{{"Annuler", "cancel"}, {"Réserver", "quick-book"}}),
+		},
+	}
+}

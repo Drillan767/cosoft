@@ -63,7 +63,7 @@ func (s *Store) SetupDatabase() error {
 		    slack_user_id VARCHAR(50) UNIQUE NOT NULL,
 		    payload BLOB NOT NULL,
 		    message_type TEXT CHECK (
-		        message_type IN ('landing', 'quick_book', 'browse', 'login', 'reservations')
+		        message_type IN ('landing', 'quick-book', 'browse', 'login', 'reservations')
 		    ) NOT NULL,
 		    created_at DATE NOT NULL
 		)
