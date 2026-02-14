@@ -3,7 +3,6 @@ package slackbot
 import (
 	"cosoft-cli/internal/slackbot/views"
 	"cosoft-cli/shared/models"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -21,7 +20,7 @@ func (b *Bot) StartServer() {
 				b.handleRequests(w, r)
 				break
 			case "/interact":
-				b.handleInteractions(w, r)
+				b.handleInteractions(r)
 			default:
 				fmt.Println("Unknown URL", r.URL.String())
 			}
@@ -78,14 +77,13 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 
 			if err != nil {
 				fmt.Println(err)
-				return
 			}
+
+			return
 		}
 
 		mainMenu := views.LandingView{}
-
 		blocks := views.RenderView(&mainMenu)
-
 		err = b.service.SendToSlack(slackRequest.ResponseUrl, blocks)
 
 		if err != nil {
@@ -95,7 +93,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
+func (b *Bot) handleInteractions(r *http.Request) {
 	err := r.ParseForm()
 
 	if err != nil {
@@ -104,30 +102,14 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := r.Form.Get("payload")
+
 	debug(payload)
 
-	// Discovering what's being sent to us
-	var envelope struct {
-		Type string `json:"type"`
-	}
-
-	err = json.Unmarshal([]byte(payload), &envelope)
+	err = b.service.HandleInteraction(payload)
 
 	if err != nil {
 		fmt.Println(err)
 		return
-	}
-
-	switch envelope.Type {
-	case "block_actions":
-		// TODO:
-		// - Read view from DB using slack_message_id
-		// - view = view.Update
-		// - Write view to DB
-		// - RenderView() => slack.Block
-		// - Send to Slack
-		// b.handleMenuAction(payload, w)
-		break
 	}
 }
 

@@ -3,6 +3,7 @@ package views
 import (
 	"cosoft-cli/internal/ui/slack"
 	"encoding/json"
+	"fmt"
 )
 
 type LoginView struct {
@@ -11,30 +12,49 @@ type LoginView struct {
 	Error    *string
 }
 
-func (l *LoginView) Update(state json.RawMessage) View {
-	// TODO: parse state
-	var tmp struct {
-		Password slackInput `json:"password"`
-		Email    slackInput `json:"email"`
-	}
-	err := json.Unmarshal(state, &tmp)
+type LoginCmd struct {
+	Email    string
+	Password string
+}
+
+type Values struct {
+	Email struct {
+		Email struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
+		} `json:"email"`
+	} `json:"email"`
+	Password struct {
+		Password struct {
+			Type  string `json:"type"`
+			Value string `json:"value"`
+		} `json:"password"`
+	} `json:"password"`
+}
+
+func (l *LoginView) Update(action Action) (View, Cmd) {
+	var values Values
+
+	err := json.Unmarshal(action.Values, &values)
 	if err != nil {
-		// TODO: log error and start from scratch
-		return l
+		fmt.Println(err)
+		return nil, nil
 	}
 
-	l.Email = tmp.Email.Value
-	l.Password = tmp.Password.Value
-	/*
-		if l.Email != "" && l.Password != "" {
-			// TODO: login
-			return &MainView{}
-		}
-	*/
+	l.Email = values.Email.Email.Value
+	l.Password = values.Password.Password.Value
 
-	s := "Tous les champs sont requis"
-	l.Error = &s
-	return l
+	if l.Email == "" || l.Password == "" {
+		s := "Tous les champs sont requis"
+		l.Error = &s
+
+		return l, nil
+	}
+
+	return l, LoginCmd{
+		Email:    l.Email,
+		Password: l.Password,
+	}
 }
 
 func RenderLoginView(l *LoginView) slack.Block {

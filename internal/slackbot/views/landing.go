@@ -2,22 +2,21 @@ package views
 
 import (
 	"cosoft-cli/internal/ui/slack"
-	"encoding/json"
 )
 
 type LandingView struct {
 	choice string
 }
 
-func (lv *LandingView) Update(state json.RawMessage) View {
-	lv.choice = "quick_book"
+func (lv *LandingView) Update(action Action) (View, Cmd) {
 
-	return lv
+	switch action.ActionID {
+	case "quick-book":
+		return lv, nil
 
-	/*
-		Suivant l'action qui a été cliquée, retourner la vue correspondante
-		- Si quickbook, renvoyer un future QuickBookView{}
-	*/
+	default:
+		return lv, nil
+	}
 }
 
 func RenderLandingView(lv *LandingView) slack.Block {

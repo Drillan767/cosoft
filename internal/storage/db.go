@@ -335,12 +335,33 @@ func (s *Store) SetSlackState(slackUserId, messageType string, state any) error 
 	_, err = s.db.Exec(
 		query,
 		slackUserId,
-		stateJson,
 		messageType,
+		stateJson,
 		time.Now(),
 	)
 
 	return err
+}
+
+func (s *Store) GetSlackState(slackUserId string) (*SlackState, error) {
+	var state SlackState
+
+	query := `SELECT message_type, payload FROM slack_messages WHERE slack_user_id = ?`
+
+	err := s.db.QueryRow(query, slackUserId).Scan(
+		&state.MessageType,
+		&state.Payload,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &state, nil
 }
 
 func (s *Store) ResetUserSlackState(slackUserID string) error {
