@@ -69,9 +69,18 @@ func QuickBookMenu() Block {
 	return Block{
 		Blocks: []BlockElement{
 			NewHeader("Réservation rapide"),
-			NewRadio("Durée de réservation", "duration", durationChoices),
-			NewDivider(),
-			NewRadio("Taille de la salle", "nbPeople", nbPeopleChoices),
+			NewSelect(
+				"Durée de la réservation",
+				"Sélectionner",
+				"duration",
+				durationChoices,
+			),
+			NewSelect(
+				"Capacité",
+				"Sélectionner",
+				"nbPeople",
+				nbPeopleChoices,
+			),
 			NewButtons([]ChoicePayload{{"Annuler", "cancel"}, {"Réserver", "quick-book"}}),
 		},
 	}
