@@ -5,6 +5,7 @@ import "fmt"
 type Select struct {
 	Type      string          `json:"type"`
 	Text      OptionContent   `json:"text"`
+	BlockId   string          `json:"block_id"`
 	Accessory OptionAccessory `json:"accessory"`
 }
 type OptionContent struct {
@@ -43,9 +44,10 @@ func NewSelect(
 	}
 
 	return Select{
-		Type: "section",
+		Type:    "section",
+		BlockId: name,
 		Text: OptionContent{
-			Type: "plain_text",
+			Type: "mrkdwn",
 			Text: fmt.Sprintf("*%s*", label),
 		},
 		Accessory: OptionAccessory{
@@ -55,7 +57,8 @@ func NewSelect(
 				Text:  placeholder,
 				Emoji: true,
 			},
-			Options: options,
+			Options:  options,
+			ActionID: name,
 		},
 	}
 

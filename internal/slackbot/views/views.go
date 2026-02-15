@@ -62,7 +62,7 @@ func RenderView(v View) slack.Block {
 	case *LandingView:
 		return RenderLandingView(v)
 	case *QuickBookView:
-		return RenderQuickBookView()
+		return RenderQuickBookView(v)
 	default:
 		return slack.Block{}
 	}

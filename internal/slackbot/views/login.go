@@ -4,6 +4,7 @@ import (
 	"cosoft-cli/internal/ui/slack"
 	"encoding/json"
 	"fmt"
+	"slices"
 )
 
 type LoginView struct {
@@ -17,7 +18,7 @@ type LoginCmd struct {
 	Password string
 }
 
-type Values struct {
+type LoginValues struct {
 	Email struct {
 		Email struct {
 			Type  string `json:"type"`
@@ -33,7 +34,7 @@ type Values struct {
 }
 
 func (l *LoginView) Update(action Action) (View, Cmd) {
-	var values Values
+	var values LoginValues
 
 	err := json.Unmarshal(action.Values, &values)
 	if err != nil {
@@ -68,7 +69,11 @@ func RenderLoginView(l *LoginView) slack.Block {
 	}
 
 	if l.Error != nil {
-		loginBlocks[3] = slack.NewContext(*l.Error)
+		loginBlocks = slices.Insert(
+			loginBlocks,
+			3,
+			slack.BlockElement(slack.NewContext(*l.Error)),
+		)
 	}
 
 	blocks := slack.Block{
