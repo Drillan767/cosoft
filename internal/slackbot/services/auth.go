@@ -1,78 +1,46 @@
 package services
 
 import (
-	"bytes"
 	"cosoft-cli/internal/api"
-	"cosoft-cli/internal/ui/slack"
+	"cosoft-cli/internal/slackbot/views"
+	"cosoft-cli/internal/storage"
 	"cosoft-cli/shared/models"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
-func (s *SlackService) IsSlackAuthenticated(request models.Request) bool {
+func (s *SlackService) AuthGuard(request models.Request) (*views.LoginView, error) {
 	cookies, err := s.store.HasActiveToken(&request.UserId)
 
 	if err != nil || cookies == nil {
-		return false
+
+		loginView := &views.LoginView{
+			Email:    "",
+			Password: "",
+		}
+
+		err := s.store.SetSlackState(request.UserId, "login", loginView)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return loginView, nil
 	}
 
 	apiClient := api.NewApi()
 	err = apiClient.GetAuth(cookies.WAuth, cookies.WAuthRefresh)
 
-	return err == nil
+	return nil, nil
 }
 
-func (s *SlackService) DisplayLogin(request models.Request) {
-	err := godotenv.Load()
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	type LoginWrapper struct {
-		TriggerId string      `json:"trigger_id"`
-		View      slack.Modal `json:"view"`
-	}
-
-	loginForm := slack.NewLogin(request.ResponseUrl)
-
-	loginWrapper := LoginWrapper{
-		TriggerId: request.TriggerId,
-		View:      loginForm,
-	}
-
-	jsonBlocks, err := json.Marshal(loginWrapper)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	req, err := http.NewRequest("POST", "https://slack.com/api/views.open", bytes.NewBuffer(jsonBlocks))
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	accessToken := os.Getenv("SLACK_ACCESS_TOKEN")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+accessToken)
-
-	_, err = http.DefaultClient.Do(req)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+func (s *SlackService) ClearUserStates(request models.Request) error {
+	return s.store.ResetUserSlackState(request.UserId)
 }
 
-func (s *SlackService) LogInUser(email, password, slackUserId, responseUrl string) error {
+func (s *SlackService) GetUserData(userId string) (*storage.User, error) {
+	return s.store.GetUserData(&userId)
+}
+
+func (s *SlackService) LogInUser(email, password, slackUserId string) error {
 	apiClient := api.NewApi()
 
 	loginPayload := api.LoginPayload{
@@ -86,42 +54,10 @@ func (s *SlackService) LogInUser(email, password, slackUserId, responseUrl strin
 		return err
 	}
 
-	return s.postLogin(*response, slackUserId, responseUrl)
-}
-
-func (s *SlackService) postLogin(user api.UserResponse, slackUserId, responseUrl string) error {
-
-	// Save / update user in database
-	err := s.store.SetUser(
-		&user,
-		user.JwtToken,
-		user.RefreshToken,
+	return s.store.SetUser(
+		response,
+		response.JwtToken,
+		response.RefreshToken,
 		&slackUserId,
 	)
-
-	if err != nil {
-		return err
-	}
-
-	// Display main menu with user's info
-
-	mainMenu := slack.MainMenu()
-
-	jsonMenu, err := json.Marshal(mainMenu)
-
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest("POST", responseUrl, bytes.NewBuffer(jsonMenu))
-
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	_, err = http.DefaultClient.Do(req)
-
-	return err
 }
