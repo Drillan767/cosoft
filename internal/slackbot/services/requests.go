@@ -47,11 +47,6 @@ func (s *SlackService) HandleInteraction(payload string) error {
 	})
 
 	switch c := cmd.(type) {
-	case nil:
-		// No command and view didn't change (e.g. select events) — nothing to do
-		if dbView != nil && views.ViewType(newView) == dbView.MessageType {
-			return nil
-		}
 	case *views.LoginCmd:
 		err = s.LogInUser(c.Email, c.Password, result.User.ID)
 
@@ -137,6 +132,22 @@ func (s *SlackService) HandleInteraction(payload string) error {
 		}
 
 	case *views.BrowseCmd:
+		rooms, err := s.getRoomAvailabilities(
+			result.User.ID,
+			c.NbPeople,
+			c.Duration,
+		)
+
+		if err != nil {
+			errMsg := ":red_circle: La réservation a échoué"
+			if bView, ok := newView.(*views.BrowseView); ok {
+				bView.Error = &errMsg
+			}
+		} else {
+			bView := newView.(*views.BrowseView)
+			bView.Phase = 1
+			bView.Rooms = &rooms
+		}
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)
