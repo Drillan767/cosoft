@@ -1,6 +1,9 @@
 package slack
 
-import "cosoft-cli/internal/common"
+import (
+	"cosoft-cli/internal/common"
+	"fmt"
+)
 
 type TimePickerAccessory struct {
 	Type        string       `json:"type"`
@@ -23,9 +26,8 @@ func NewTimePicker(label, name, placeholder string) TimePicker {
 	return TimePicker{
 		Type: "section",
 		Text: BlockPayload{
-			Type:  "mrkdwn",
-			Text:  label,
-			Emoji: true,
+			Type: "mrkdwn",
+			Text: fmt.Sprintf("*%s*", label),
 		},
 		Accessory: TimePickerAccessory{
 			Type:        "timepicker",

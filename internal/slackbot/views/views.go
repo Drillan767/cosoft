@@ -29,6 +29,8 @@ func RestoreView(messageType string, payload []byte) (View, error) {
 		break
 	case "quick-book":
 		view = &QuickBookView{}
+	case "browse":
+		view = &BrowseView{}
 	default:
 		return nil, fmt.Errorf("unknown view type: %s", messageType)
 	}
@@ -50,6 +52,8 @@ func ViewType(v View) string {
 		return "landing"
 	case *QuickBookView:
 		return "quick-book"
+	case *BrowseView:
+		return "browse"
 	default:
 		return "unknown"
 	}
@@ -63,6 +67,8 @@ func RenderView(v View) slack.Block {
 		return RenderLandingView(v)
 	case *QuickBookView:
 		return RenderQuickBookView(v)
+	case *BrowseView:
+		return RenderBrowseView(v)
 	default:
 		return slack.Block{}
 	}

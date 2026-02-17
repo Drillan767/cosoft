@@ -135,6 +135,8 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			blocks = views.RenderView(qbView)
 			return s.SendToSlack(result.ResponseURL, blocks)
 		}
+
+	case *views.BrowseCmd:
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)

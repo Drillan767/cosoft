@@ -16,6 +16,8 @@ func (lv *LandingView) Update(action Action) (View, Cmd) {
 	switch action.ActionID {
 	case "quick-book":
 		return &QuickBookView{}, nil
+	case "browse":
+		return &BrowseView{}, nil
 
 	default:
 		return lv, nil

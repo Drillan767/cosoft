@@ -5,6 +5,38 @@ import (
 	"fmt"
 )
 
+var (
+	durationChoices = []ChoicePayload{
+		{
+			"30 minutes",
+			"30",
+		},
+		{
+			"1 heure",
+			"60",
+		},
+		{
+			"1 heure 30",
+			"90",
+		},
+		{
+			"2 heures",
+			"120",
+		},
+	}
+
+	nbPeopleChoices = []ChoicePayload{
+		{
+			"Une personne",
+			"1",
+		},
+		{
+			"Deux personnes ou plus",
+			"2",
+		},
+	}
+)
+
 func MainMenu(user storage.User) Block {
 	welcomeMessage := fmt.Sprintf(
 		"Vous êtes connecté(e) en tant que *%s %s* (%s)",
@@ -36,36 +68,6 @@ func MainMenu(user storage.User) Block {
 }
 
 func QuickBookMenu() Block {
-	durationChoices := []ChoicePayload{
-		{
-			"30 minutes",
-			"30",
-		},
-		{
-			"1 heure",
-			"60",
-		},
-		{
-			"1 heure 30",
-			"90",
-		},
-		{
-			"2 heures",
-			"120",
-		},
-	}
-
-	nbPeopleChoices := []ChoicePayload{
-		{
-			"Une personne",
-			"1",
-		},
-		{
-			"Deux personnes ou plus",
-			"2",
-		},
-	}
-
 	return Block{
 		Blocks: []BlockElement{
 			NewHeader("Réservation rapide"),
@@ -82,6 +84,29 @@ func QuickBookMenu() Block {
 				nbPeopleChoices,
 			),
 			NewButtons([]ChoicePayload{{"Annuler", "cancel"}, {"Réserver", "quick-book"}}),
+		},
+	}
+}
+
+func BrowseMenu() Block {
+	return Block{
+		Blocks: []BlockElement{
+			NewHeader("Réserver une salle"),
+			NewDatePicker("Date", "date", "Date"),
+			NewTimePicker("Heure", "time", "Heure"),
+			NewSelect(
+				"Durée de la réservation",
+				"Sélectionner",
+				"duration",
+				durationChoices,
+			),
+			NewSelect(
+				"Capacité",
+				"Sélectionner",
+				"nbPeople",
+				nbPeopleChoices,
+			),
+			NewButtons([]ChoicePayload{{"Annuler", "cancel"}, {"Réserver", "browse"}}),
 		},
 	}
 }

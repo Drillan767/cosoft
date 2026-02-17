@@ -1,6 +1,9 @@
 package slack
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type DatePickerAccessory struct {
 	Type        string       `json:"type"`
@@ -23,17 +26,15 @@ func NewDatePicker(label, name, placeholder string) DatePicker {
 	return DatePicker{
 		Type: "section",
 		Text: BlockPayload{
-			Type:  "mrkdwn",
-			Text:  label,
-			Emoji: true,
+			Type: "mrkdwn",
+			Text: fmt.Sprintf("*%s*", label),
 		},
 		Accessory: DatePickerAccessory{
 			Type:        "datepicker",
 			InitialDate: today,
 			Placeholder: BlockPayload{
-				Type:  "plain_text",
-				Text:  placeholder,
-				Emoji: true,
+				Type: "plain_text",
+				Text: placeholder,
 			},
 			ActionID: name,
 		},
