@@ -12,9 +12,8 @@ func NewMultiMarkdown(texts []string) MultiMarkdown {
 
 	for i, text := range texts {
 		fields[i] = BlockPayload{
-			Type:  "mrkdwn",
-			Text:  text,
-			Emoji: true,
+			Type: "mrkdwn",
+			Text: text,
 		}
 	}
 

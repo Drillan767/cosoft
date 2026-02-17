@@ -120,8 +120,6 @@ func (b *Bot) handleInteractions(r *http.Request) {
 
 	payload := r.Form.Get("payload")
 
-	debug(payload)
-
 	err = b.service.HandleInteraction(payload)
 
 	if err != nil {

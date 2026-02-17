@@ -1,12 +1,14 @@
 package views
 
 import (
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/ui/slack"
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
+	"time"
 )
 
 type QuickBookView struct {
@@ -118,29 +120,28 @@ func RenderQuickBookView(qb *QuickBookView) slack.Block {
 
 		return blocks
 	case 3:
-		// duration, _ := strconv.Atoi(qb.Duration)
-		// startTime := common.GetClosestQuarterHour()
-		// endTime := startTime.Add(time.Duration(duration) * time.Minute)
-		// dateFormat := "02/01/2006 15:04"
-		// paidPrice := qb.PickedRoom.Price * (float64(duration) / 60)
+		duration, _ := strconv.Atoi(qb.Duration)
+		startTime := common.GetClosestQuarterHour()
+		endTime := startTime.Add(time.Duration(duration) * time.Minute)
+		dateFormat := "02/01/2006 15:04"
+		paidPrice := qb.PickedRoom.Price * (float64(duration) / 60)
 
 		blocks.Blocks = slices.Insert(
 			blocks.Blocks,
 			len(blocks.Blocks),
 			slack.BlockElement(slack.NewDivider()),
 			slack.BlockElement(slack.NewMrkDwn(":white_check_mark: *Réservation réussie !*")),
-			/*
-				slack.BlockElement(slack.NewMultiMarkdown([]string{
-					fmt.Sprintf("*Salle de réunion :*\n%s", qb.PickedRoom.Name),
-					fmt.Sprintf("*Durée :\n%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
-					fmt.Sprintf("*Coût :*\n%.2f credits", paidPrice),
-				})),
-				slack.BlockElement(slack.NewMenuItem(
-					"Vous pouvez maintenant revenir à l'accueil",
-					"Retour",
-					"cancel",
-				)),
-			*/
+
+			slack.BlockElement(slack.NewMultiMarkdown([]string{
+				fmt.Sprintf("*Salle de réunion :*\n%s", qb.PickedRoom.Name),
+				fmt.Sprintf("*Durée :*\n%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
+				fmt.Sprintf("*Coût :*\n%.2f credits", paidPrice),
+			})),
+			slack.BlockElement(slack.NewMenuItem(
+				"Vous pouvez maintenant revenir à l'accueil",
+				"Retour",
+				"cancel",
+			)),
 		)
 
 		return blocks

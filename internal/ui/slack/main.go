@@ -13,7 +13,7 @@ type Block struct {
 type BlockPayload struct {
 	Text  string `json:"text"`
 	Type  string `json:"type"`
-	Emoji bool   `json:"emoji"`
+	Emoji bool   `json:"emoji,omitempty"`
 }
 
 type ChoicePayload struct {
