@@ -15,6 +15,7 @@ type DatePickerAccessory struct {
 type DatePicker struct {
 	Type      string              `json:"type"`
 	Text      BlockPayload        `json:"text"`
+	BlockId   string              `json:"block_id"`
 	Accessory DatePickerAccessory `json:"accessory"`
 }
 
@@ -24,7 +25,8 @@ func NewDatePicker(label, name, placeholder string) DatePicker {
 	today := time.Now().Format(time.DateOnly)
 
 	return DatePicker{
-		Type: "section",
+		Type:    "section",
+		BlockId: name,
 		Text: BlockPayload{
 			Type: "mrkdwn",
 			Text: fmt.Sprintf("*%s*", label),

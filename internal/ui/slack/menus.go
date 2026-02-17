@@ -93,7 +93,7 @@ func BrowseMenu() Block {
 		Blocks: []BlockElement{
 			NewHeader("Réserver une salle"),
 			NewDatePicker("Date", "date", "Date"),
-			NewTimePicker("Heure", "time", "Heure"),
+			NewTimePicker("*Heure*\nFormat autorisé : 15h00, 15:15", "time", "Heure"),
 			NewSelect(
 				"Durée de la réservation",
 				"Sélectionner",
@@ -106,7 +106,7 @@ func BrowseMenu() Block {
 				"nbPeople",
 				nbPeopleChoices,
 			),
-			NewButtons([]ChoicePayload{{"Annuler", "cancel"}, {"Réserver", "browse"}}),
+			NewButtons([]ChoicePayload{{"Annuler", "cancel"}, {"Voir les salles disponibles", "browse"}}),
 		},
 	}
 }
