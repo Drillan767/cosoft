@@ -4,6 +4,7 @@ import (
 	"cosoft-cli/internal/api"
 	"cosoft-cli/shared/models"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -56,6 +57,16 @@ func (s *Store) SetupDatabase() error {
 			price REAL NOT NULL DEFAULT 0,
 			created_at DATE NOT NULL
 		);
+
+		CREATE TABLE IF NOT EXISTS slack_messages (
+		    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+		    slack_user_id VARCHAR(50) UNIQUE NOT NULL,
+		    payload BLOB NOT NULL,
+		    message_type TEXT CHECK (
+		        message_type IN ('landing', 'quick-book', 'browse', 'login', 'reservations')
+		    ) NOT NULL,
+		    created_at DATE NOT NULL
+		)
 	`
 
 	_, err := s.db.Exec(query)
@@ -305,4 +316,58 @@ func (s *Store) GetRoomByName(name string) (*models.Room, error) {
 
 	return &room, nil
 
+}
+
+func (s *Store) SetSlackState(slackUserId, messageType string, state any) error {
+	stateJson, err := json.Marshal(state)
+
+	if err != nil {
+		return err
+	}
+
+	query := `
+		INSERT INTO slack_messages (id, slack_user_id, message_type, payload, created_at)
+		VALUES (NULL, ?, ?, ?, ?)
+		ON CONFLICT (slack_user_id) DO UPDATE SET
+   			payload = EXCLUDED.payload,
+   			message_type = EXCLUDED.message_type		
+	`
+	_, err = s.db.Exec(
+		query,
+		slackUserId,
+		messageType,
+		stateJson,
+		time.Now(),
+	)
+
+	return err
+}
+
+func (s *Store) GetSlackState(slackUserId string) (*SlackState, error) {
+	var state SlackState
+
+	query := `SELECT message_type, payload FROM slack_messages WHERE slack_user_id = ?`
+
+	err := s.db.QueryRow(query, slackUserId).Scan(
+		&state.MessageType,
+		&state.Payload,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &state, nil
+}
+
+func (s *Store) ResetUserSlackState(slackUserID string) error {
+	query := `DELETE FROM slack_messages WHERE slack_user_id = ?`
+
+	_, err := s.db.Exec(query, slackUserID)
+
+	return err
 }

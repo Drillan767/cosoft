@@ -1,23 +1,13 @@
 package slackbot
 
 import (
-	"cosoft-cli/internal/slackbot/services"
+	"cosoft-cli/internal/slackbot/views"
 	"cosoft-cli/shared/models"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 )
-
-type LoginFailedPayload struct {
-	Password string `json:"password"`
-}
-
-type LoginFeedback struct {
-	ResponseAction string              `json:"response_action"`
-	Errors         *LoginFailedPayload `json:"errors,omitempty"`
-}
 
 func (b *Bot) StartServer() {
 	s := http.Server{
@@ -30,7 +20,7 @@ func (b *Bot) StartServer() {
 				b.handleRequests(w, r)
 				break
 			case "/interact":
-				b.handleInteractions(w, r)
+				b.handleInteractions(r)
 			default:
 				fmt.Println("Unknown URL", r.URL.String())
 			}
@@ -51,6 +41,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
 
 	slackRequest := models.Request{
@@ -61,38 +52,65 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 		TriggerId:   r.Form.Get("trigger_id"),
 	}
 
-	s, err := services.NewSlackService()
+	// Clear out user's old slack states
+	err = b.service.ClearUserStates(slackRequest)
 
 	if err != nil {
 		fmt.Println(err)
-		w.Write([]byte(err.Error()))
 		return
-	}
-
-	authenticated := s.IsSlackAuthenticated(slackRequest)
-
-	if !authenticated {
-		s.DisplayLogin(slackRequest)
-		return
-	}
-
-	blocks, err := s.ParseSlackCommand(slackRequest)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	jsonBlocks, err := json.Marshal(blocks)
-
-	if err != nil {
-		fmt.Println(err)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonBlocks)
+	w.Write([]byte(`{"response_type":"ephemeral","text":"Chargement en cours..."}`))
+
+	go func() {
+		view, err := b.service.AuthGuard(slackRequest)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if view != nil {
+			blocks := views.RenderView(view)
+			err = b.service.SendToSlack(slackRequest.ResponseUrl, blocks)
+
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			return
+		}
+
+		user, err := b.service.GetUserData(slackRequest.UserId)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		mainMenu := views.LandingView{
+			User: *user,
+		}
+
+		err = b.service.SetSlackState(slackRequest.UserId, "landing", &mainMenu)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		blocks := views.RenderView(&mainMenu)
+		err = b.service.SendToSlack(slackRequest.ResponseUrl, blocks)
+
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}()
 }
 
-func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
+func (b *Bot) handleInteractions(r *http.Request) {
 	err := r.ParseForm()
 
 	if err != nil {
@@ -101,68 +119,13 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := r.Form.Get("payload")
-	debug(payload)
 
-	var viewResponse models.SlackLoginResponse
-
-	err = json.Unmarshal([]byte(payload), &viewResponse)
+	err = b.service.HandleInteraction(payload)
 
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	s, err := services.NewSlackService()
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// PTSD from Drupal 8's forms overriding.
-	email := viewResponse.View.State.Values.Email.Email.Value
-	password := viewResponse.View.State.Values.Password.Password.Value
-	responseUrl := viewResponse.View.PrivateMetadata
-	slackUserId := viewResponse.User.ID
-
-	err = s.LogInUser(email, password, slackUserId, responseUrl)
-
-	if err != nil {
-		feedback := LoginFeedback{
-			ResponseAction: "errors",
-			Errors: &LoginFailedPayload{
-				Password: err.Error(),
-			},
-		}
-
-		jsonValue, err := json.Marshal(feedback)
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonValue)
-
-		fmt.Println(err)
-		return
-	}
-
-	feedback := LoginFeedback{
-		ResponseAction: "clear",
-	}
-
-	jsonValue, err := json.Marshal(feedback)
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(jsonValue)
-	return
 }
 
 func debug(payload interface{}) {
