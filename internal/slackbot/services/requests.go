@@ -95,7 +95,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			}
 		} else {
 			qbView := newView.(*views.QuickBookView)
-			qbView.Phase = 1
+			qbView.Phase = 2
 			qbView.Rooms = &rooms
 
 			err := s.store.SetSlackState(result.User.ID, views.ViewType(qbView), qbView)

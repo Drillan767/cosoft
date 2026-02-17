@@ -111,6 +111,9 @@ func RenderQuickBookView(qb *QuickBookView) slack.Block {
 		return blocks
 
 	case 2:
+		// Remove action buttons
+		blocks.Blocks = blocks.Blocks[:len(blocks.Blocks)-1]
+		// Add rest of the feedback
 		blocks.Blocks = slices.Insert(
 			blocks.Blocks,
 			len(blocks.Blocks),
@@ -126,6 +129,9 @@ func RenderQuickBookView(qb *QuickBookView) slack.Block {
 		dateFormat := "02/01/2006 15:04"
 		paidPrice := qb.PickedRoom.Price * (float64(duration) / 60)
 
+		// Remove action buttons
+		blocks.Blocks = blocks.Blocks[:len(blocks.Blocks)-1]
+		// Add rest of the feedback
 		blocks.Blocks = slices.Insert(
 			blocks.Blocks,
 			len(blocks.Blocks),
