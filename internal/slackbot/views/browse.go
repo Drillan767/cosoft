@@ -47,11 +47,6 @@ type BrowsePayload struct {
 		Duration struct {
 			Type           string `json:"type"`
 			SelectedOption struct {
-				Text struct {
-					Type  string `json:"type"`
-					Text  string `json:"text"`
-					Emoji bool   `json:"emoji"`
-				} `json:"text"`
 				Value string `json:"value"`
 			} `json:"selected_option"`
 		} `json:"duration"`
@@ -60,18 +55,26 @@ type BrowsePayload struct {
 		NbPeople struct {
 			Type           string `json:"type"`
 			SelectedOption struct {
-				Text struct {
-					Type  string `json:"type"`
-					Text  string `json:"text"`
-					Emoji bool   `json:"emoji"`
-				} `json:"text"`
 				Value string `json:"value"`
 			} `json:"selected_option"`
 		} `json:"nbPeople"`
 	} `json:"nbPeople"`
 }
 
+type PickedRoomPayload struct {
+	PickRoom struct {
+		PickRoom struct {
+			Type           string `json:"type"`
+			SelectedOption struct {
+				Value string `json:"value"`
+			} `json:"selected_option"`
+		} `json:"pick-room"`
+	} `json:"pick-room"`
+}
+
 func (b *BrowseView) Update(action Action) (View, Cmd) {
+	fmt.Println(action.ActionID)
+
 	if action.ActionID == "cancel" {
 		return b, &LandingCmd{}
 	} else if action.ActionID == "browse" {
@@ -141,6 +144,28 @@ func (b *BrowseView) Update(action Action) (View, Cmd) {
 			Duration: duration,
 			Datetime: *parsedDt,
 		}
+	} else if action.ActionID == "pick-room" {
+		var pickedRoom PickedRoomPayload
+
+		err := json.Unmarshal(action.Values, &pickedRoom)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		roomId := pickedRoom.PickRoom.PickRoom.SelectedOption.Value
+
+		for _, r := range *b.Rooms {
+			if r.Id == roomId {
+				b.PickedRoom = &r
+				break
+			}
+		}
+
+		if b.PickedRoom == nil {
+			fmt.Println("PickedRoom not found")
+			return b, nil
+		}
 
 	} else if action.ActionID == "back" {
 		b.Phase = 0
@@ -172,41 +197,65 @@ func RenderBrowseView(b *BrowseView) slack.Block {
 			return slack.Block{
 				Blocks: []slack.BlockElement{
 					slack.NewMenuItem(
-						"*Aucune salle disponible\nVeuillez changer vos filtres*",
+						"*Aucune salle disponible*\nVeuillez changer vos filtres",
 						"Retour",
-						"cancel",
+						"back",
 					),
 				},
 			}
 		}
 
-		rooms := []slack.BlockElement{
+		nbPeople, duration, _ := b.filtersToNumber()
+		t, _ := b.criteriaToTime()
+		end := t.Add(time.Duration(duration) * time.Minute)
+		choices := make([]slack.ChoicePayload, len(*b.Rooms))
+
+		for i, room := range *b.Rooms {
+			choices[i] = slack.ChoicePayload{
+				Text:  room.Name,
+				Value: room.Id,
+			}
+		}
+
+		blocks := []slack.BlockElement{
 			slack.NewHeader(fmt.Sprintf("%d salles ont été trouvées", len(*b.Rooms))),
 			slack.NewMrkDwn(fmt.Sprintf(
-				"%s %s - %s personnes, %s minutes",
-				b.Date,
-				b.Time,
-				b.NbPeople,
-				b.Duration,
+				"%s → %s — %d personnes",
+				t.Format("02/01/2006 15:04"),
+				end.Format("02/01/2006 15:04"),
+				nbPeople,
 			)),
 			slack.NewDivider(),
+			slack.NewSelect(
+				"Sélectionez une salle",
+				"Salle",
+				"pick-room",
+				choices,
+			),
 		}
 
-		for _, room := range *b.Rooms {
-			rooms = append(rooms, slack.NewMenuItem(
-				fmt.Sprintf("*%s*\nCoût : %.02f credits", room.Name, room.Price),
-				"Réserver",
-				fmt.Sprintf("book-%s", room.Id),
-			))
+		if b.PickedRoom != nil {
+			blocks = append(
+				blocks,
+				slack.NewPreview(
+					fmt.Sprintf("*%s*\n%.2f crédits", b.PickedRoom.Name, b.PickedRoom.Price),
+					b.PickedRoom.Image,
+					b.PickedRoom.Name,
+				),
+				slack.NewButtons([]slack.ChoicePayload{{"Réserver", "book"}}),
+			)
 		}
 
-		rooms = append(rooms,
+		blocks = append(blocks,
 			slack.NewDivider(),
-			slack.NewButtons([]slack.ChoicePayload{{"Retour à l'accueil", "cancel"}, {"Modifier les filtres", "back"}}),
+			slack.NewButtons([]slack.ChoicePayload{
+				{"Retour à l'accueil", "cancel"},
+				{"Modifier les filtres", "back"},
+			}),
 		)
 
 		return slack.Block{
-			Blocks: rooms,
+			Blocks: blocks,
 		}
 	}
 	return slack.Block{}
