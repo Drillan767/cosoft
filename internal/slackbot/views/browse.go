@@ -104,13 +104,12 @@ func (b *BrowseView) Update(action Action) (View, Cmd) {
 		if b.Date == "" {
 			b.Date = time.Now().Format(time.DateOnly)
 		}
+
 		if b.Time == "" {
 			b.Time = common.GetClosestQuarterHour().Format("15:04")
 		}
 
-		dt := fmt.Sprintf("%s %s", b.Date, b.Time)
-
-		parsedDt, err := time.Parse("2006-01-02 15:04", dt)
+		parsedDt, err := b.criteriaToTime()
 
 		if err != nil {
 			fmt.Println(err)
@@ -131,15 +130,7 @@ func (b *BrowseView) Update(action Action) (View, Cmd) {
 			return b, nil
 		}
 
-		nbPeople, err := strconv.Atoi(b.NbPeople)
-
-		if err != nil {
-			fmt.Println(err)
-			return nil, err
-		}
-
-		duration, err := strconv.Atoi(b.Duration)
-
+		nbPeople, duration, err := b.filtersToNumber()
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
@@ -148,9 +139,12 @@ func (b *BrowseView) Update(action Action) (View, Cmd) {
 		return b, &BrowseCmd{
 			NbPeople: nbPeople,
 			Duration: duration,
-			Datetime: parsedDt,
+			Datetime: *parsedDt,
 		}
 
+	} else if action.ActionID == "back" {
+		b.Phase = 0
+		return b, nil
 	} else if strings.HasPrefix(action.ActionID, "book-") {
 		// A room has been picked
 		// Return this for now.
@@ -186,11 +180,65 @@ func RenderBrowseView(b *BrowseView) slack.Block {
 			}
 		}
 
+		rooms := []slack.BlockElement{
+			slack.NewHeader(fmt.Sprintf("%d salles ont été trouvées", len(*b.Rooms))),
+			slack.NewMrkDwn(fmt.Sprintf(
+				"%s %s - %s personnes, %s minutes",
+				b.Date,
+				b.Time,
+				b.NbPeople,
+				b.Duration,
+			)),
+			slack.NewDivider(),
+		}
+
+		for _, room := range *b.Rooms {
+			rooms = append(rooms, slack.NewMenuItem(
+				fmt.Sprintf("*%s*\nCoût : %.02f credits", room.Name, room.Price),
+				"Réserver",
+				fmt.Sprintf("book-%s", room.Id),
+			))
+		}
+
+		rooms = append(rooms,
+			slack.NewDivider(),
+			slack.NewButtons([]slack.ChoicePayload{{"Retour à l'accueil", "cancel"}, {"Modifier les filtres", "back"}}),
+		)
+
 		return slack.Block{
-			Blocks: []slack.BlockElement{
-				slack.NewMrkDwn(fmt.Sprintf("%d salles ont été trouvées", len(*b.Rooms))),
-			},
+			Blocks: rooms,
 		}
 	}
 	return slack.Block{}
+}
+
+func (b *BrowseView) criteriaToTime() (*time.Time, error) {
+	dt := fmt.Sprintf("%s %s", b.Date, b.Time)
+
+	parsedDt, err := time.Parse("2006-01-02 15:04", dt)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	return &parsedDt, nil
+}
+
+func (b *BrowseView) filtersToNumber() (int, int, error) {
+	nbPeople, err := strconv.Atoi(b.NbPeople)
+
+	if err != nil {
+		fmt.Println(err)
+		return 0, 0, err
+	}
+
+	duration, err := strconv.Atoi(b.Duration)
+
+	if err != nil {
+		fmt.Println(err)
+		return 0, 0, err
+	}
+
+	return nbPeople, duration, nil
 }
