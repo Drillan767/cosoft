@@ -22,6 +22,7 @@ type Room struct {
 	Name    string
 	NbUsers int
 	Price   float64
+	Image   string
 }
 
 type UnavailableSlot struct {
