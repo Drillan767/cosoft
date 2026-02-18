@@ -21,9 +21,10 @@ type QuickBookView struct {
 }
 
 type QuickBookCmd struct {
-	NbPeople int
-	Duration int
-	Rooms    []models.Room
+	NbPeople   int
+	Duration   int
+	Datetime   time.Time
+	PickedRoom models.Room
 }
 
 type QuickBookValues struct {
@@ -44,7 +45,6 @@ type QuickBookValues struct {
 }
 
 func (qb *QuickBookView) Update(action Action) (View, Cmd) {
-
 	switch action.ActionID {
 	case "cancel":
 		return qb, &LandingCmd{}
@@ -83,15 +83,17 @@ func (qb *QuickBookView) Update(action Action) (View, Cmd) {
 			return nil, err
 		}
 
+		dt := common.GetClosestQuarterHour()
+
 		// Everything looks clear, submitting.
 		return qb, &QuickBookCmd{
 			NbPeople: nbPeople,
 			Duration: duration,
+			Datetime: dt,
 		}
 
 	default:
 		return qb, nil
-
 	}
 }
 
