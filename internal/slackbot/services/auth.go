@@ -40,6 +40,22 @@ func (s *SlackService) GetUserData(userId string) (*storage.User, error) {
 	return s.store.GetUserData(&userId)
 }
 
+func (s *SlackService) RefreshAndGetUser(slackUserId string) (*storage.User, error) {
+	_, err := s.store.UpdateCredits(&slackUserId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := s.GetUserData(slackUserId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (s *SlackService) LogInUser(email, password, slackUserId string) error {
 	apiClient := api.NewApi()
 

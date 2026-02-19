@@ -82,7 +82,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user, err := b.service.GetUserData(slackRequest.UserId)
+		user, err := b.service.RefreshAndGetUser(slackRequest.UserId)
 
 		if err != nil {
 			fmt.Println(err)

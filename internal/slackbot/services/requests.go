@@ -47,7 +47,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 		Values:   result.State.Values,
 	})
 
-	user, err := s.store.GetUserData(&result.User.ID)
+	user, err := s.RefreshAndGetUser(result.User.ID)
 
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			}
 		}
 	case *views.LandingCmd:
-		user, err := s.store.GetUserData(&result.User.ID)
+		user, err := s.RefreshAndGetUser(result.User.ID)
 
 		if err != nil {
 			return err
