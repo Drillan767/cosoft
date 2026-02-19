@@ -115,6 +115,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			}
 
 			var pickedRoom *models.Room
+
 			for _, room := range rooms {
 				if room.NbUsers >= c.NbPeople {
 					pickedRoom = &room
@@ -173,6 +174,43 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			bView := newView.(*views.BrowseView)
 			bView.Phase = 1
 			bView.Rooms = &rooms
+
+			err = s.store.SetSlackState(result.User.ID, views.ViewType(bView), bView)
+
+			if err != nil {
+				return err
+			}
+
+			blocks := views.RenderView(bView)
+			return s.SendToSlack(result.ResponseURL, blocks)
+		}
+
+	case *views.BookCmd:
+		err = s.bookRoom(
+			*user,
+			c.NbPeople,
+			c.Duration,
+			c.PickedRoom,
+			c.Datetime,
+		)
+
+		if err != nil {
+			errMsg := ":red_circle: La réservation a échoué"
+			if bView, ok := newView.(*views.BrowseView); ok {
+				bView.Error = &errMsg
+			}
+		} else {
+			bView := newView.(*views.BrowseView)
+			bView.Phase = 2
+
+			err = s.store.SetSlackState(result.User.ID, views.ViewType(bView), bView)
+
+			if err != nil {
+				return err
+			}
+
+			blocks := views.RenderView(bView)
+			return s.SendToSlack(result.ResponseURL, blocks)
 		}
 	}
 

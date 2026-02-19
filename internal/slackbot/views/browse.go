@@ -30,6 +30,13 @@ type BrowseCmd struct {
 	Rooms    []models.Room
 }
 
+type BookCmd struct {
+	NbPeople   int
+	Duration   int
+	Datetime   time.Time
+	PickedRoom models.Room
+}
+
 type BrowsePayload struct {
 	Time struct {
 		Time struct {
@@ -166,7 +173,16 @@ func (b *BrowseView) Update(action Action) (View, Cmd) {
 			fmt.Println("PickedRoom not found")
 			return b, nil
 		}
+	} else if action.ActionID == "book" {
+		nbPeople, duration, _ := b.filtersToNumber()
+		t, _ := b.criteriaToTime()
 
+		return b, &BookCmd{
+			NbPeople:   nbPeople,
+			Duration:   duration,
+			PickedRoom: *b.PickedRoom,
+			Datetime:   *t,
+		}
 	} else if action.ActionID == "back" {
 		b.Phase = 0
 		return b, nil
@@ -256,6 +272,30 @@ func RenderBrowseView(b *BrowseView) slack.Block {
 
 		return slack.Block{
 			Blocks: blocks,
+		}
+
+	case 2:
+		duration, _ := strconv.Atoi(b.Duration)
+		startTime, _ := b.criteriaToTime()
+		endTime := startTime.Add(time.Duration(duration) * time.Minute)
+		dateFormat := "02/01/2006 15:04"
+		paidPrice := b.PickedRoom.Price * (float64(duration) / 60)
+
+		return slack.Block{
+			Blocks: []slack.BlockElement{
+				slack.BlockElement(slack.NewMrkDwn(":white_check_mark: *Réservation réussie !*")),
+
+				slack.BlockElement(slack.NewMultiMarkdown([]string{
+					fmt.Sprintf("*Salle de réunion :*\n%s", b.PickedRoom.Name),
+					fmt.Sprintf("*Durée :*\n%s → %s", startTime.Format(dateFormat), endTime.Format(dateFormat)),
+					fmt.Sprintf("*Coût :*\n%.2f credits", paidPrice),
+				})),
+				slack.BlockElement(slack.NewMenuItem(
+					"Vous pouvez maintenant revenir à l'accueil",
+					"Retour",
+					"cancel",
+				)),
+			},
 		}
 	}
 	return slack.Block{}
