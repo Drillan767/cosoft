@@ -18,6 +18,8 @@ func (lv *LandingView) Update(action Action) (View, Cmd) {
 		return &QuickBookView{}, nil
 	case "browse":
 		return &BrowseView{}, nil
+	case "reservations":
+		return &ReservationView{}, nil
 
 	default:
 		return lv, nil

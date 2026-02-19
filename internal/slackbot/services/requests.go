@@ -212,6 +212,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			blocks := views.RenderView(bView)
 			return s.SendToSlack(result.ResponseURL, blocks)
 		}
+	case *views.ReservationCmd:
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)

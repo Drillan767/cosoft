@@ -80,8 +80,6 @@ type PickedRoomPayload struct {
 }
 
 func (b *BrowseView) Update(action Action) (View, Cmd) {
-	fmt.Println(action.ActionID)
-
 	if action.ActionID == "cancel" {
 		return b, &LandingCmd{}
 	} else if action.ActionID == "browse" {
