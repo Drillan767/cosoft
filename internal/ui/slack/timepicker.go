@@ -1,6 +1,8 @@
 package slack
 
-import "cosoft-cli/internal/common"
+import (
+	"cosoft-cli/internal/common"
+)
 
 type TimePickerAccessory struct {
 	Type        string       `json:"type"`
@@ -12,6 +14,7 @@ type TimePickerAccessory struct {
 type TimePicker struct {
 	Type      string              `json:"type"`
 	Text      BlockPayload        `json:"text"`
+	BlockId   string              `json:"block_id"`
 	Accessory TimePickerAccessory `json:"accessory"`
 }
 
@@ -21,11 +24,11 @@ func NewTimePicker(label, name, placeholder string) TimePicker {
 	time := common.GetClosestQuarterHour()
 
 	return TimePicker{
-		Type: "section",
+		Type:    "section",
+		BlockId: name,
 		Text: BlockPayload{
-			Type:  "mrkdwn",
-			Text:  label,
-			Emoji: true,
+			Type: "mrkdwn",
+			Text: label,
 		},
 		Accessory: TimePickerAccessory{
 			Type:        "timepicker",

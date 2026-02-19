@@ -20,7 +20,7 @@ func (b *Bot) StartServer() {
 				b.handleRequests(w, r)
 				break
 			case "/interact":
-				b.handleInteractions(r)
+				b.handleInteractions(w, r)
 			default:
 				fmt.Println("Unknown URL", r.URL.String())
 			}
@@ -82,7 +82,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		user, err := b.service.GetUserData(slackRequest.UserId)
+		user, err := b.service.RefreshAndGetUser(slackRequest.UserId)
 
 		if err != nil {
 			fmt.Println(err)
@@ -110,7 +110,7 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func (b *Bot) handleInteractions(r *http.Request) {
+func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 
 	if err != nil {
@@ -120,12 +120,15 @@ func (b *Bot) handleInteractions(r *http.Request) {
 
 	payload := r.Form.Get("payload")
 
-	err = b.service.HandleInteraction(payload)
+	w.WriteHeader(http.StatusOK)
 
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	go func() {
+		err := b.service.HandleInteraction(payload)
+
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 }
 
 func debug(payload interface{}) {
