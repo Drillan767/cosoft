@@ -191,12 +191,6 @@ func (s *SlackService) SetSlackState(slackUserId, messageType string, state any)
 }
 
 func (s *SlackService) SendToSlack(responseUrl string, blocks slack.Block) error {
-
-	type BlockWrapper struct {
-		ResponseType string `json:"response_type"`
-		Blocks       slack.Block
-	}
-
 	jsonBlocks, err := json.Marshal(blocks)
 
 	if err != nil {

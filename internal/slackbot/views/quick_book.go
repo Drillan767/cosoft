@@ -55,7 +55,7 @@ func (qb *QuickBookView) Update(action Action) (View, Cmd) {
 
 		if err != nil {
 			fmt.Println(err)
-			return nil, err
+			return qb, nil
 		}
 
 		qb.Duration = values.Duration.Duration.SelectedOption.Value
@@ -73,14 +73,14 @@ func (qb *QuickBookView) Update(action Action) (View, Cmd) {
 
 		if err != nil {
 			fmt.Println(err)
-			return nil, err
+			return qb, nil
 		}
 
 		duration, err := strconv.Atoi(qb.Duration)
 
 		if err != nil {
 			fmt.Println(err)
-			return nil, err
+			return qb, nil
 		}
 
 		dt := common.GetClosestQuarterHour()
