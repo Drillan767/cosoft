@@ -229,6 +229,8 @@ func (s *SlackService) HandleInteraction(payload string) error {
 		if err != nil {
 			errMsg := ":red_circle: Impossible d'annuler la réservation les réservations"
 			rView.Error = &errMsg
+		} else {
+			rView.Phase = 1
 		}
 	}
 
