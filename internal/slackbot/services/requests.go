@@ -47,8 +47,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 		Values:   result.State.Values,
 	})
 
-	user, err := s.RefreshAndGetUser(result.User.ID)
-
+	user, err := s.store.GetUserData(&result.User.ID)
 	if err != nil {
 		return err
 	}
@@ -212,6 +211,26 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			blocks := views.RenderView(bView)
 			return s.SendToSlack(result.ResponseURL, blocks)
 		}
+	case *views.ReservationCmd:
+		reservations, err := s.fetchReservations(*user)
+		rView := newView.(*views.ReservationView)
+
+		if err != nil {
+			errMsg := ":red_circle: Impossible de charger les réservations"
+			rView.Error = &errMsg
+		} else {
+			rView.Reservations = &reservations
+		}
+
+	case *views.CancelReservationCmd:
+		rView := newView.(*views.ReservationView)
+		err := s.cancelReservation(*user, *c.ReservationId)
+		if err != nil {
+			errMsg := ":red_circle: Impossible d'annuler la réservation les réservations"
+			rView.Error = &errMsg
+		} else {
+			rView.Phase = 1
+		}
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)
@@ -300,4 +319,24 @@ func (s *SlackService) bookRoom(
 	}
 
 	return nil
+}
+
+func (s *SlackService) fetchReservations(user storage.User) ([]api.Reservation, error) {
+	apiClient := api.NewApi()
+	bookings, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bookings.Data, nil
+}
+
+func (s *SlackService) cancelReservation(
+	user storage.User,
+	reservationId string,
+) error {
+	apiClient := api.NewApi()
+
+	return apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, reservationId)
 }

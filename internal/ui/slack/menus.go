@@ -63,6 +63,11 @@ func MainMenu(user storage.User) Block {
 				"Accéder",
 				"browse",
 			),
+			NewMenuItem(
+				"*Mes réservations*\nVoir et annuler vos futures réservations",
+				"Accéder",
+				"reservations",
+			),
 		},
 	}
 }
