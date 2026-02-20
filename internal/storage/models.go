@@ -35,8 +35,3 @@ type Reservation struct {
 	Cost      int       `db:"cost"`
 	CreatedAt time.Time `db:"created_at"`
 }
-
-type SlackState struct {
-	MessageType string `db:"message_type"`
-	Payload     []byte `db:"payload"`
-}

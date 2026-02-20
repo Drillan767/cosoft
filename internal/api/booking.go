@@ -311,7 +311,6 @@ func (a *Api) getRoomsInfoFromResponse(response AvailableRoomsResponse) ([]model
 			Name:    room.Name,
 			NbUsers: room.NbUsers,
 			Price:   room.Prices[0].Credits,
-			Image:   room.Image.Url,
 		}
 
 		rooms = append(rooms, mr)
@@ -329,13 +328,13 @@ func (a *Api) getRoomsInfoFromResponse(response AvailableRoomsResponse) ([]model
 			Name:    room.Name,
 			NbUsers: room.NbUsers,
 			Price:   room.Prices[0].Credits,
-			Image:   room.Image.Url,
 		}
 
 		rooms = append(rooms, mr)
 	}
 
 	return rooms, nil
+
 }
 
 func randomStringGenerator(length int) string {

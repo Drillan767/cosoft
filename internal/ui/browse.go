@@ -265,7 +265,7 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 		}
 
 		if user.Credits < pickedRoom.Price {
-			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perform the booking, aborting")}
+			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perfor, the booking, aborting")}
 		}
 
 		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)

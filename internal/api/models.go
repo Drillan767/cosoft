@@ -37,16 +37,11 @@ type PriceResponse struct {
 	Credits float64 `json:"Credits"`
 }
 
-type RoomImage struct {
-	Url string `json:"Url"`
-}
-
 type RoomResponse struct {
 	Id      string          `json:"Id"`
 	Name    string          `json:"Name"`
 	NbUsers int             `json:"NbUsers"`
 	Prices  []PriceResponse `json:"Prices"`
-	Image   RoomImage       `json:"Image"`
 }
 
 type AvailableRoomsResponse struct {
