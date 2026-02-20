@@ -213,6 +213,16 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			return s.SendToSlack(result.ResponseURL, blocks)
 		}
 	case *views.ReservationCmd:
+		reservations, err := s.fetchReservations(*user)
+		rView := newView.(*views.ReservationView)
+
+		if err != nil {
+			errMsg := ":red_circle: Impossible de charger les réservations"
+			rView.Error = &errMsg
+		} else {
+			rView.Reservations = &reservations
+		}
+
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)
@@ -301,4 +311,15 @@ func (s *SlackService) bookRoom(
 	}
 
 	return nil
+}
+
+func (s *SlackService) fetchReservations(user storage.User) ([]api.Reservation, error) {
+	apiClient := api.NewApi()
+	bookings, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return bookings.Data, nil
 }
