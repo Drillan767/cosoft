@@ -42,6 +42,9 @@ func (r *ReservationView) Update(action Action) (View, Cmd) {
 	if err := uuid.Validate(action.ActionID); err == nil {
 		r.ReservationId = &action.ActionID
 
+		// Resetting "BookingStarted" to avoid being blocked.
+		r.BookingStarted = false
+
 		for _, reservation := range *r.Reservations {
 			if reservation.OrderResourceRentId == action.ActionID {
 				r.PickedReservation = &reservation
@@ -61,8 +64,6 @@ func (r *ReservationView) Update(action Action) (View, Cmd) {
 			fmt.Println(err)
 			return r, nil
 		}
-
-		fmt.Println("started:", bookinStartsAt.Before(time.Now()), bookinStartsAt, time.Now())
 
 		if bookinStartsAt.Before(time.Now()) {
 			r.BookingStarted = true
