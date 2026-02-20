@@ -5,13 +5,17 @@ import (
 	"cosoft-cli/internal/ui/slack"
 	"fmt"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ReservationView struct {
-	Phase         int
-	Reservations  *[]api.Reservation
-	ReservationId *string
-	Error         *string
+	Phase             int
+	Reservations      *[]api.Reservation
+	PickedReservation *api.Reservation
+	ReservationId     *string
+	BookingStarted    bool
+	Error             *string
 }
 
 type ReservationCmd struct {
@@ -19,10 +23,49 @@ type ReservationCmd struct {
 	ReservationId *string
 }
 
+type CancelReservationCmd struct {
+	ReservationId *string
+}
+
 func (r *ReservationView) Update(action Action) (View, Cmd) {
 	fmt.Println(action.ActionID)
-	if action.ActionID == "cancel" {
+	if action.ActionID == "back" {
 		return r, &LandingCmd{}
+	}
+
+	if action.ActionID == "cancel" {
+		return r, &CancelReservationCmd{
+			ReservationId: r.ReservationId,
+		}
+	}
+
+	// Action id is the uuid of a selected booking.
+	if err := uuid.Validate(action.ActionID); err == nil {
+		r.ReservationId = &action.ActionID
+
+		for _, reservation := range *r.Reservations {
+			if reservation.OrderResourceRentId == action.ActionID {
+				r.PickedReservation = &reservation
+				break
+			}
+		}
+
+		if r.PickedReservation == nil {
+			fmt.Println("Could not find a picked reservation")
+			return r, nil
+		}
+
+		// Ensure the reservation hasn't already started
+		bookinStartsAt, err := time.Parse("2006-01-02T15:04:05", r.PickedReservation.Start)
+
+		if err != nil {
+			fmt.Println(err)
+			return r, nil
+		}
+
+		if bookinStartsAt.Before(time.Now()) {
+			r.BookingStarted = true
+		}
 	}
 
 	return r, nil
@@ -74,10 +117,39 @@ func RenderReservationsView(r *ReservationView) slack.Block {
 				parsedEnd.Format(dateFormat),
 				paidPrice,
 			),
-			"Annuler",
+			"Sélectionner",
 			r.OrderResourceRentId,
 		)))
 	}
+
+	if r.PickedReservation != nil {
+
+		if r.BookingStarted {
+			list = append(
+				list,
+				slack.BlockElement(slack.NewContext(":warning: Impossible d'annuler une réservation déjà commencée")),
+			)
+		} else {
+			list = append(
+				list,
+				slack.BlockElement(slack.NewDivider()),
+				slack.BlockElement(slack.NewMenuItem(
+					fmt.Sprintf(
+						"Confirmer l'annulation de \"%s\" ?",
+						r.PickedReservation.ItemName,
+					),
+					"Annuler réservation",
+					"cancel",
+				)),
+			)
+		}
+	}
+
+	list = append(
+		list,
+		slack.BlockElement(slack.NewDivider()),
+		slack.NewButtons([]slack.ChoicePayload{{"Retour", "back"}}),
+	)
 
 	blocks.Blocks = list
 

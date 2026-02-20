@@ -223,6 +223,13 @@ func (s *SlackService) HandleInteraction(payload string) error {
 			rView.Reservations = &reservations
 		}
 
+	case *views.CancelReservationCmd:
+		rView := newView.(*views.ReservationView)
+		err := s.cancelReservation(*user, *c.ReservationId)
+		if err != nil {
+			errMsg := ":red_circle: Impossible d'annuler la réservation les réservations"
+			rView.Error = &errMsg
+		}
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)
@@ -322,4 +329,13 @@ func (s *SlackService) fetchReservations(user storage.User) ([]api.Reservation, 
 	}
 
 	return bookings.Data, nil
+}
+
+func (s *SlackService) cancelReservation(
+	user storage.User,
+	reservationId string,
+) error {
+	apiClient := api.NewApi()
+
+	return apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, reservationId)
 }
