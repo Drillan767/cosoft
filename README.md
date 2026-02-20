@@ -89,3 +89,8 @@ Feel free to rename the program as you like and place it anywhere you'll remembe
 1. Search for "cmd" in the start menu
 2. Once the terminal opened, change the directory to get to where the program is
 3. Type `meeting-room-booker-windows-amd64.exe` and hit the "enter" key.
+
+
+## Note
+
+It's safer to delete your own local configuration each time you download a new release, just to ensure your local database is up to date.

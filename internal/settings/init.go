@@ -32,7 +32,7 @@ func EnsureDatabaseExists() error {
 		return err
 	}
 
-	err = store.SetupDatabase(path)
+	err = store.SetupDatabase()
 
 	if err != nil {
 		return err

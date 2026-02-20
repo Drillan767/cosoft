@@ -2,3 +2,5 @@ cosoft*
 *.log
 __debug*
 .idea*
+.env
+slack/database.db
