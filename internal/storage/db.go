@@ -63,7 +63,7 @@ func (s *Store) SetupDatabase() error {
 		    slack_user_id VARCHAR(50) UNIQUE NOT NULL,
 		    payload BLOB NOT NULL,
 		    message_type TEXT CHECK (
-		        message_type IN ('landing', 'quick-book', 'browse', 'login', 'reservations')
+		        message_type IN ('landing', 'quick-book', 'browse', 'login', 'reservations', 'calendar')
 		    ) NOT NULL,
 		    created_at DATE NOT NULL
 		)
@@ -187,6 +187,9 @@ func (s *Store) GetUserData(slackUserID *string) (*User, error) {
 	)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

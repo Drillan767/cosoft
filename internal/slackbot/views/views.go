@@ -33,6 +33,8 @@ func RestoreView(messageType string, payload []byte) (View, error) {
 		view = &BrowseView{}
 	case "reservations":
 		view = &ReservationView{}
+	case "calendar":
+		view = &CalendarView{}
 	default:
 		return nil, fmt.Errorf("unknown view type: %s", messageType)
 	}
@@ -58,6 +60,8 @@ func ViewType(v View) string {
 		return "browse"
 	case *ReservationView:
 		return "reservations"
+	case *CalendarView:
+		return "calendar"
 	default:
 		return "unknown"
 	}
@@ -75,6 +79,8 @@ func RenderView(v View) slack.Block {
 		return RenderBrowseView(v)
 	case *ReservationView:
 		return RenderReservationsView(v)
+	case *CalendarView:
+		return RenderCalendarView(v)
 	default:
 		return slack.Block{}
 	}

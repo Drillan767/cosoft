@@ -68,6 +68,11 @@ func MainMenu(user storage.User) Block {
 				"Accéder",
 				"reservations",
 			),
+			NewMenuItem(
+				"*Calendrier*\nVoir l'occupation des salles de la journée et des suivantes",
+				"Accéder",
+				"calendar",
+			),
 		},
 	}
 }

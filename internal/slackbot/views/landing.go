@@ -20,7 +20,8 @@ func (lv *LandingView) Update(action Action) (View, Cmd) {
 		return &BrowseView{}, nil
 	case "reservations":
 		return &ReservationView{}, &ReservationCmd{}
-
+	case "calendar":
+		return NewCalendarView(), &CalendarCmd{}
 	default:
 		return lv, nil
 	}
