@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,7 +45,10 @@ func (s *Service) EnsureRoomsStored() error {
 	return s.store.CreateRooms(apiRooms)
 }
 
-func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reservation) ([]string, error) {
+func (s *Service) GetRoomAvailabilities(
+	date time.Time,
+	userBookings []api.Reservation,
+) ([]string, error) {
 	rooms, err := s.store.GetRooms()
 
 	if err != nil {
@@ -96,138 +98,9 @@ func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reser
 
 	wg.Wait()
 
-	maxLabelLength := 0
-	displayedHours := 16
-
-	for _, room := range results {
-		if len(room.Name)+1 > maxLabelLength {
-			maxLabelLength = len(room.Name) + 1
-		}
-	}
-
-	rows := make([]string, len(results)+1)
-
-	rows[0] = s.createCalendarHeader(maxLabelLength, displayedHours)
-
-	for i, room := range results {
-		rows[i+1] = s.createCalendarRow(room, maxLabelLength, userBookings)
-	}
+	rows := common.BuildCalendar(0, 16, results, userBookings)
 
 	return rows, nil
-}
-
-func (s *Service) createCalendarHeader(labelLength, displayedHours int) string {
-	spacing := 2
-	result := ""
-
-	for i := 0; i < displayedHours; i++ {
-		if i+8 < 10 {
-			result += "0"
-		}
-		result += fmt.Sprintf("%dh%s", i+8, strings.Repeat(" ", spacing))
-	}
-
-	return strings.Repeat(" ", labelLength-1) + result
-}
-
-func (s *Service) createCalendarRow(
-	row models.RoomUsage,
-	labelLength int,
-	userBookings []api.Reservation,
-) string {
-	type parsedSlot struct {
-		Start time.Time
-		End   time.Time
-	}
-
-	var slots []parsedSlot
-	spacing := labelLength - len(row.Name)
-	columns := ""
-
-	for _, slot := range row.UsedSlots {
-		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
-		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
-
-		slots = append(slots, parsedSlot{
-			Start: start,
-			End:   end,
-		})
-	}
-
-	var userSlots []parsedSlot
-	for _, slot := range userBookings {
-		if slot.ItemName != row.Name {
-			// User booking not matching current row, skipping.
-			continue
-		}
-
-		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
-		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
-		userSlots = append(userSlots, parsedSlot{
-			Start: start,
-			End:   end,
-		})
-	}
-
-	now := common.GetClosestQuarterHour()
-
-	baseDate := slots[0].Start.Truncate(24 * time.Hour)
-	startTime := baseDate.Add(8 * time.Hour)
-	endTime := baseDate.Add(23 * time.Hour)
-	counter := 0
-
-	current := startTime
-
-	for !current.After(endTime) {
-		occupied := false
-		ownReservation := false
-		slotEnd := current.Add(15 * time.Minute)
-
-		for _, slot := range slots {
-			if current.Before(slot.End) && slotEnd.After(slot.Start) {
-				occupied = true
-				break
-			}
-		}
-
-		for _, uSlot := range userSlots {
-			if current.Before(uSlot.End) && slotEnd.After(uSlot.Start) {
-				ownReservation = true
-				break
-			}
-		}
-
-		symbol := " "
-
-		if occupied {
-			symbol = "░"
-		}
-
-		if ownReservation {
-			symbol = "█"
-		}
-
-		isNow := current.Equal(now)
-		nextSlot := current.Add(15 * time.Minute)
-		nextIsNow := nextSlot.Equal(now)
-
-		if isNow {
-			// If current time, color the cell's background in red,
-			symbol = lipgloss.NewStyle().Background(lipgloss.Color("#f45656")).Render(symbol)
-		}
-
-		if counter%4 == 3 && !nextIsNow {
-			// If not current time, simply display a normal pipe.
-			symbol += "│"
-		}
-
-		columns += symbol
-		counter++
-
-		current = current.Add(15 * time.Minute)
-	}
-
-	return row.Name + strings.Repeat(" ", spacing) + "│" + columns
 }
 
 func (s *Service) NonInteractiveBooking(
