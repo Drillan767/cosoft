@@ -9,6 +9,7 @@ import (
 type CalendarView struct {
 	CurrentDate time.Time
 	Calendar    string
+	Error       *string
 }
 
 type CalendarCmd struct {
@@ -46,7 +47,7 @@ func RenderCalendarView(c *CalendarView) slack.Block {
 			slack.NewHeader("Calendrier"),
 			slack.NewMrkDwn(fmt.Sprintf("*%s*", dt)),
 			slack.NewDivider(),
-			slack.NewMrkDwn("Ici y'aura le calendrier"),
+			slack.NewMrkDwn(fmt.Sprintf("`%s`", c.Calendar)),
 			slack.NewButtons(actions),
 			slack.NewDivider(),
 			slack.NewButtons([]slack.ChoicePayload{{"Retour", "cancel"}}),

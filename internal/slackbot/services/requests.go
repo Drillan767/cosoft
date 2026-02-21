@@ -2,15 +2,12 @@ package services
 
 import (
 	"bytes"
-	"cosoft-cli/internal/api"
 	"cosoft-cli/internal/slackbot/views"
-	"cosoft-cli/internal/storage"
 	"cosoft-cli/internal/ui/slack"
 	"cosoft-cli/shared/models"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 func (s *SlackService) HandleInteraction(payload string) error {
@@ -231,6 +228,40 @@ func (s *SlackService) HandleInteraction(payload string) error {
 		} else {
 			rView.Phase = 1
 		}
+	case *views.CalendarCmd:
+		// Note: the thing is completely stateless.
+		cView := newView.(*views.CalendarView)
+
+		// Get user's future reservations
+		reservations, err := s.fetchReservations(*user)
+
+		if err != nil {
+			errMsg := ":red_circle: Impossible de charger les réservations"
+			cView.Error = &errMsg
+		} else {
+			// Ensure we have all rooms available.
+			rooms, err := s.getAllRooms(*user)
+
+			if err != nil {
+				errMsg := ":red_circle: Impossible de récupérer les salles de réunion"
+				cView.Error = &errMsg
+			} else {
+				rows, err := s.getRoomsPlanning(
+					user,
+					rooms,
+					c.Time,
+					reservations,
+				)
+
+				if err != nil {
+					fmt.Println(err)
+					errMsg := ":red_circle: Impossible de charger le calendrier"
+					cView.Error = &errMsg
+				} else {
+					cView.Calendar = rows
+				}
+			}
+		}
 	}
 
 	err = s.store.SetSlackState(result.User.ID, views.ViewType(newView), newView)
@@ -264,79 +295,4 @@ func (s *SlackService) SendToSlack(responseUrl string, blocks slack.Block) error
 	_, err = http.DefaultClient.Do(req)
 
 	return err
-}
-
-func (s *SlackService) getRoomAvailabilities(
-	user storage.User,
-	nbPeople, duration int,
-	dateTime time.Time,
-) ([]models.Room, error) {
-
-	apiClient := api.NewApi()
-
-	payload := api.CosoftAvailabilityPayload{
-		DateTime: dateTime,
-		NbPeople: nbPeople,
-		Duration: duration,
-	}
-
-	rooms, err := apiClient.GetAvailableRooms(user.WAuth, user.WAuthRefresh, payload)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rooms) == 0 {
-		return nil, fmt.Errorf(":red_circle: Aucune salle disponible")
-	}
-
-	return rooms, nil
-}
-
-func (s *SlackService) bookRoom(
-	user storage.User,
-	nbPeople, duration int,
-	pickedRoom models.Room,
-	dateTime time.Time,
-) error {
-
-	payload := api.CosoftBookingPayload{
-		CosoftAvailabilityPayload: api.CosoftAvailabilityPayload{
-			NbPeople: nbPeople,
-			Duration: duration,
-			DateTime: dateTime,
-		},
-		UserCredits: user.Credits,
-		Room:        pickedRoom,
-	}
-
-	apiClient := api.NewApi()
-
-	err := apiClient.BookRoom(user.WAuth, user.WAuthRefresh, payload)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *SlackService) fetchReservations(user storage.User) ([]api.Reservation, error) {
-	apiClient := api.NewApi()
-	bookings, err := apiClient.GetFutureBookings(user.WAuth, user.WAuthRefresh)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return bookings.Data, nil
-}
-
-func (s *SlackService) cancelReservation(
-	user storage.User,
-	reservationId string,
-) error {
-	apiClient := api.NewApi()
-
-	return apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, reservationId)
 }

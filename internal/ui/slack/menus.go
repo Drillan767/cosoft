@@ -54,6 +54,11 @@ func MainMenu(user storage.User) Block {
 			NewDivider(),
 			NewHeader("Menu principal"),
 			NewMenuItem(
+				"*Calendrier*\nVoir l'occupation des salles de la journée et des suivantes",
+				"Accéder",
+				"calendar",
+			),
+			NewMenuItem(
 				"*Réservation rapide*\nRéserver immédiatement une salle de réunion",
 				"Accéder",
 				"quick-book",
@@ -67,11 +72,6 @@ func MainMenu(user storage.User) Block {
 				"*Mes réservations*\nVoir et annuler vos futures réservations",
 				"Accéder",
 				"reservations",
-			),
-			NewMenuItem(
-				"*Calendrier*\nVoir l'occupation des salles de la journée et des suivantes",
-				"Accéder",
-				"calendar",
 			),
 		},
 	}

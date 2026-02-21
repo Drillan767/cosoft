@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -46,7 +45,10 @@ func (s *Service) EnsureRoomsStored() error {
 	return s.store.CreateRooms(apiRooms)
 }
 
-func (s *Service) GetRoomAvailabilities(date time.Time, userBookings []api.Reservation) ([]string, error) {
+func (s *Service) GetRoomAvailabilities(
+	date time.Time,
+	userBookings []api.Reservation,
+) ([]string, error) {
 	rooms, err := s.store.GetRooms()
 
 	if err != nil {
