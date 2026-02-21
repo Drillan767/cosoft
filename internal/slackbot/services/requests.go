@@ -249,7 +249,7 @@ func (s *SlackService) HandleInteraction(payload string) error {
 				rows, err := s.getRoomsPlanning(
 					user,
 					rooms,
-					c.Time,
+					cView.CurrentDate,
 					reservations,
 				)
 

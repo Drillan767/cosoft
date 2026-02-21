@@ -93,7 +93,7 @@ func (s *SlackService) getAllRooms(user storage.User) ([]storage.Room, error) {
 
 	// Rooms are stored, return early
 	if len(rooms) > 0 {
-		return rooms, err
+		return rooms, nil
 	}
 
 	// Fetch the rooms

@@ -34,7 +34,7 @@ func RestoreView(messageType string, payload []byte) (View, error) {
 	case "reservations":
 		view = &ReservationView{}
 	case "calendar":
-		view = &CalendarView{}
+		view = NewCalendarView()
 	default:
 		return nil, fmt.Errorf("unknown view type: %s", messageType)
 	}

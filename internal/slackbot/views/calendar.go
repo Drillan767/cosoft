@@ -23,21 +23,35 @@ func NewCalendarView() *CalendarView {
 }
 
 func (c *CalendarView) Update(action Action) (View, Cmd) {
-	if action.ActionID == "cancel" {
-		return c, &LandingView{}
+	switch action.ActionID {
+	case "cancel":
+		return c, &LandingCmd{}
+	case "next-day":
+		c.CurrentDate = c.CurrentDate.Add(24 * time.Hour)
+		return c, &CalendarCmd{
+			Time: c.CurrentDate,
+		}
+	case "prev-day":
+		today := time.Now().Truncate(24 * time.Hour)
+		if c.CurrentDate.Truncate(24 * time.Hour).Equal(today) {
+			// already on today, can't go back
+			return c, nil
+		}
+		c.CurrentDate = c.CurrentDate.Add(-24 * time.Hour)
+		return c, &CalendarCmd{}
+	default:
+		return c, nil
 	}
-
-	return c, nil
 }
 
 func RenderCalendarView(c *CalendarView) slack.Block {
 	dt := c.CurrentDate.Format("02/01/2006")
 	isToday := c.CurrentDate.Truncate(24 * time.Hour).Equal(time.Now().Truncate(24 * time.Hour))
-	actions := []slack.ChoicePayload{{"Jour suivant", "next"}}
+	actions := []slack.ChoicePayload{{"Jour suivant", "next-day"}}
 
 	if !isToday {
 		actions = append(
-			[]slack.ChoicePayload{{"Jour précédent", "prev"}},
+			[]slack.ChoicePayload{{"Jour précédent", "prev-day"}},
 			actions...,
 		)
 	}
@@ -47,7 +61,7 @@ func RenderCalendarView(c *CalendarView) slack.Block {
 			slack.NewHeader("Calendrier"),
 			slack.NewMrkDwn(fmt.Sprintf("*%s*", dt)),
 			slack.NewDivider(),
-			slack.NewMrkDwn(fmt.Sprintf("`%s`", c.Calendar)),
+			slack.NewKitchenSink(c.Calendar),
 			slack.NewButtons(actions),
 			slack.NewDivider(),
 			slack.NewButtons([]slack.ChoicePayload{{"Retour", "cancel"}}),
