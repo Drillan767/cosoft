@@ -2,7 +2,6 @@ cosoft*
 *.log
 __debug*
 .idea*
-.env
 slack/database.db
 
 .DS_Store

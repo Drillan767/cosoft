@@ -5,17 +5,16 @@ import (
 	"cosoft-cli/internal/slackbot/services"
 	"cosoft-cli/internal/storage"
 	"log"
-
-	"github.com/joho/godotenv"
+	"os"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file")
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "./slack/database.db"
 	}
 
-	store, err := storage.NewStore("./slack/database.db")
+	store, err := storage.NewStore(dbPath)
 
 	if err != nil {
 		log.Fatal(err)
