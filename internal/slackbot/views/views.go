@@ -15,7 +15,7 @@ type View interface {
 	Update(action Action) (View, Cmd)
 }
 
-type Cmd interface{}
+type Cmd any
 
 func RestoreView(messageType string, payload []byte) (View, error) {
 	var view View
