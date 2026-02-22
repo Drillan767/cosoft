@@ -9,7 +9,7 @@ type LandingState struct {
 	User *storage.User
 }
 
-func newLandingState(store *storage.Store, userID string) (State, error) {
+func NewLandingState(store *storage.Store, userID string) (State, error) {
 	_, err := store.UpdateCredits(&userID)
 	if err != nil {
 		return &LoginState{
@@ -29,16 +29,21 @@ func newLandingState(store *storage.Store, userID string) (State, error) {
 	}, nil
 }
 
+func (s *LandingState) Type() string { return landingStateType }
+
 func (s *LandingState) Update(store *storage.Store, params UpdateParams) (State, error) {
 	switch params.ActionID {
-	case "quick-book":
-		// TODO: implement QuickBookState.
-		return &QuickBookState{}, nil
 	case "browse":
 		return &BrowseState{}, nil
+	case "calendar":
+		return newCalendarState(), nil
+	case "quick-book":
+		return &QuickBookState{}, nil
 	case "reservations":
 		return newReservationState(store, params.UserID)
 	default:
 		return s, nil
 	}
 }
+
+func (s *LandingState) Next() bool { return false }
