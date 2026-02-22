@@ -189,6 +189,10 @@ func (b *BrowseModel) getRoomsAvailability() tea.Cmd {
 
 		user, err := authService.GetAuthData()
 
+		if err != nil {
+			return bookingFailedMsg{err: err}
+		}
+
 		apiClient := api.NewApi()
 
 		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)

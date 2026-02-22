@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 )
 
 func (b *Bot) StartServer() {
@@ -18,7 +17,6 @@ func (b *Bot) StartServer() {
 			switch r.URL.String() {
 			case "/book":
 				b.handleRequests(w, r)
-				break
 			case "/interact":
 				b.handleInteractions(w, r)
 			default:
@@ -61,7 +59,12 @@ func (b *Bot) handleRequests(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(`{"response_type":"ephemeral","text":"Chargement en cours..."}`))
+	_, err = w.Write([]byte(`{"response_type":"ephemeral","text":"Chargement en cours..."}`))
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	go func() {
 		view, err := b.service.AuthGuard(slackRequest)
@@ -129,12 +132,4 @@ func (b *Bot) handleInteractions(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 		}
 	}()
-}
-
-func debug(payload interface{}) {
-	file, _ := os.OpenFile("debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	defer file.Close()
-
-	file.WriteString(fmt.Sprintf("%v \n\n", payload))
 }

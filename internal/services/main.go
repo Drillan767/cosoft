@@ -40,7 +40,11 @@ func (s *Service) ClearData() error {
 		return err
 	}
 
-	s.store.Close()
+	err = s.store.Close()
+
+	if err != nil {
+		return err
+	}
 
 	configDir, err := os.UserConfigDir()
 	if err != nil {

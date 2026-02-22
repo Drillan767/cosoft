@@ -258,6 +258,10 @@ func (s *Store) UpdateCredits(slackUserID *string) (*float64, error) {
 
 	_, err = s.db.Exec(query, newCredits, uc.Id)
 
+	if err != nil {
+		return nil, err
+	}
+
 	return &newCredits, nil
 }
 
@@ -312,7 +316,7 @@ func (s *Store) GetRoomByName(name string) (*models.Room, error) {
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("No room matching your query. \n\n Please try ./cosoft rooms to see available ones.")
+			return nil, fmt.Errorf("no room matching your query. \n\n Please try ./cosoft rooms to see available ones")
 		}
 		return nil, err
 	}

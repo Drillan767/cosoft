@@ -256,15 +256,15 @@ func RenderBrowseView(b *BrowseView) slack.Block {
 					b.PickedRoom.Image,
 					b.PickedRoom.Name,
 				),
-				slack.NewButtons([]slack.ChoicePayload{{"Réserver", "book"}}),
+				slack.NewButtons([]slack.ChoicePayload{{Text: "Réserver", Value: "book"}}),
 			)
 		}
 
 		blocks = append(blocks,
 			slack.NewDivider(),
 			slack.NewButtons([]slack.ChoicePayload{
-				{"Retour à l'accueil", "cancel"},
-				{"Modifier les filtres", "back"},
+				{Text: "Retour à l'accueil", Value: "cancel"},
+				{Text: "Modifier les filtres", Value: "back"},
 			}),
 		)
 
