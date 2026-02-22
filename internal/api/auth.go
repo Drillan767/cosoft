@@ -56,7 +56,7 @@ func (a *Api) Login(payload *LoginPayload) (*UserResponse, error) {
 	}
 
 	if !response.IsAuth || response.User == nil {
-		return nil, fmt.Errorf("Wrong username / password")
+		return nil, fmt.Errorf("wrong username / password")
 	}
 
 	// Extract refresh token from Set-Cookie header
@@ -112,7 +112,7 @@ func (a *Api) GetAuth(wAuth, wAuthRefresh string) error {
 	}
 
 	if !response.IsAuth || response.User == nil {
-		return fmt.Errorf("Wrong username / password")
+		return fmt.Errorf("wrong username / password")
 	}
 
 	return nil

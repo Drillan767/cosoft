@@ -65,7 +65,7 @@ func RenderLoginView(l *LoginView) slack.Block {
 		slack.NewInput("Email", "email"),
 		slack.NewInput("Mot de passe", "password"),
 		slack.NewContext(":warning: Le mot de passe est affiché en clair dans le champ"),
-		slack.NewButtons([]slack.ChoicePayload{{"Connexion", "login"}}),
+		slack.NewButtons([]slack.ChoicePayload{{Text: "Connexion", Value: "login"}}),
 	}
 
 	if l.Error != nil {

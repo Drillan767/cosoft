@@ -47,11 +47,11 @@ func (c *CalendarView) Update(action Action) (View, Cmd) {
 func RenderCalendarView(c *CalendarView) slack.Block {
 	dt := c.CurrentDate.Format("02/01/2006")
 	isToday := c.CurrentDate.Truncate(24 * time.Hour).Equal(time.Now().Truncate(24 * time.Hour))
-	actions := []slack.ChoicePayload{{"Jour suivant", "next-day"}}
+	actions := []slack.ChoicePayload{{Text: "Jour suivant", Value: "next-day"}}
 
 	if !isToday {
 		actions = append(
-			[]slack.ChoicePayload{{"Jour précédent", "prev-day"}},
+			[]slack.ChoicePayload{{Text: "Jour précédent", Value: "prev-day"}},
 			actions...,
 		)
 	}
@@ -64,7 +64,7 @@ func RenderCalendarView(c *CalendarView) slack.Block {
 			slack.NewKitchenSink(c.Calendar),
 			slack.NewButtons(actions),
 			slack.NewDivider(),
-			slack.NewButtons([]slack.ChoicePayload{{"Retour", "cancel"}}),
+			slack.NewButtons([]slack.ChoicePayload{{Text: "Retour", Value: "cancel"}}),
 		},
 	}
 }

@@ -210,6 +210,10 @@ func (qb *QuickBookModel) getRoomsAvailability() tea.Cmd {
 
 		user, err := authService.GetAuthData()
 
+		if err != nil {
+			return bookingFailedMsg{err: err}
+		}
+
 		apiClient := api.NewApi()
 
 		payload := api.CosoftAvailabilityPayload{

@@ -28,5 +28,11 @@ func (s *Service) Logout() error {
 }
 
 func (s *Service) GetAuthData() (*storage.User, error) {
-	return s.store.GetUserData(nil)
+	user, err := s.store.GetUserData(nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

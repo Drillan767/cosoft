@@ -210,5 +210,5 @@ func (s *Service) NonInteractiveBooking(
 func debug(text string) {
 	file, _ := os.OpenFile("debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer file.Close()
-	file.WriteString(fmt.Sprintf("%s: %s \n\n", time.Now().Format(time.RFC3339), text))
+	_, _ = fmt.Fprintf(file, "%s: %s \n\n", time.Now().Format(time.RFC3339), text)
 }

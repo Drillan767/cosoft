@@ -4,3 +4,5 @@ __debug*
 .idea*
 .env
 slack/database.db
+
+.DS_Store

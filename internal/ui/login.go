@@ -35,7 +35,7 @@ func (m *LoginModel) Init() tea.Cmd {
 
 func required(s string) error {
 	if s == "" {
-		return errors.New("Field is required")
+		return errors.New("field is required")
 	}
 
 	return nil

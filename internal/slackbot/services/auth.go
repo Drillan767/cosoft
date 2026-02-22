@@ -29,6 +29,10 @@ func (s *SlackService) AuthGuard(request models.Request) (*views.LoginView, erro
 	apiClient := api.NewApi()
 	err = apiClient.GetAuth(cookies.WAuth, cookies.WAuthRefresh)
 
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 

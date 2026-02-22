@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -113,7 +112,6 @@ func (a *Api) GetAvailableRooms(
 	resp, err := client.Do(req)
 
 	if err != nil {
-		a.debug(fmt.Sprintf("Error line 71, %s", err.Error()))
 		return nil, err
 	}
 
@@ -203,14 +201,12 @@ func (a *Api) prepareRoomAvailabilityRequest(payload CosoftAvailabilityPayload) 
 	jsonDtp, err := json.Marshal(dtp)
 
 	if err != nil {
-		a.debug(fmt.Sprintf("Error line 190, %s", err.Error()))
 		return nil, err
 	}
 
 	jsonAbp, err := json.Marshal(abp)
 
 	if err != nil {
-		a.debug(fmt.Sprintf("Error line 197, %s", err.Error()))
 		return nil, err
 	}
 
@@ -219,7 +215,6 @@ func (a *Api) prepareRoomAvailabilityRequest(payload CosoftAvailabilityPayload) 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonAbp))
 
 	if err != nil {
-		a.debug(fmt.Sprintf("Error line 206, %s", err.Error()))
 		return nil, err
 	}
 
@@ -232,9 +227,9 @@ func (a *Api) prepareRoomAvailabilityRequest(payload CosoftAvailabilityPayload) 
 }
 
 func (a *Api) prepareRoomReservationRequest(payload CosoftBookingPayload) (*http.Request, error) {
-	startTime := payload.CosoftAvailabilityPayload.DateTime
-	endTime := payload.CosoftAvailabilityPayload.
-		DateTime.Add(time.Duration(payload.CosoftAvailabilityPayload.Duration) * time.Minute)
+	startTime := payload.DateTime
+	endTime := payload.
+		DateTime.Add(time.Duration(payload.Duration) * time.Minute)
 
 	reservation := RoomBookingPayload{
 		// Required fields the user needs to validate on the actual website.
@@ -340,14 +335,6 @@ func (a *Api) getRoomsInfoFromResponse(response AvailableRoomsResponse) ([]model
 
 func randomStringGenerator(length int) string {
 	b := make([]byte, length+2)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	return fmt.Sprintf("%x", b)[2 : length+2]
-}
-
-func (a *Api) debug(text string) {
-	file, _ := os.OpenFile("debug.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	defer file.Close()
-
-	file.WriteString(fmt.Sprintf("%s \n\n", text))
 }

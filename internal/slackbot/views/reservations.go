@@ -152,7 +152,7 @@ func RenderReservationsView(r *ReservationView) slack.Block {
 		list = append(
 			list,
 			slack.BlockElement(slack.NewDivider()),
-			slack.NewButtons([]slack.ChoicePayload{{"Retour", "back"}}),
+			slack.NewButtons([]slack.ChoicePayload{{Text: "Retour", Value: "back"}}),
 		)
 
 		blocks.Blocks = list
@@ -164,7 +164,7 @@ func RenderReservationsView(r *ReservationView) slack.Block {
 				slack.NewHeader(":white_check_mark: Annulation réussie réussie !"),
 				slack.NewMrkDwn("Vous pouvez maintenant retourner à l'accueil"),
 				slack.NewDivider(),
-				slack.NewButtons([]slack.ChoicePayload{{"Retour", "back"}}),
+				slack.NewButtons([]slack.ChoicePayload{{Text: "Retour", Value: "back"}}),
 			},
 		}
 	default:
