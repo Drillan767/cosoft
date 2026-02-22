@@ -35,7 +35,7 @@ func (m *LoginModel) Init() tea.Cmd {
 
 func required(s string) error {
 	if s == "" {
-		return errors.New("Field is required")
+		return errors.New("field is required")
 	}
 
 	return nil
@@ -178,7 +178,7 @@ func (m *LoginModel) GetUser() *api.UserResponse {
 	return m.user
 }
 
-// LoginFormWithLayout creates a login form wrapped in a layout
+// LoginForm creates a login form wrapped in a layout
 func (ui *UI) LoginForm() (*LoginModel, error) {
 	loginModel := NewLoginModel()
 

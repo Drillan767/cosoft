@@ -39,7 +39,6 @@ func (a *Api) GetRoomBusyTime(
 	jsonPayload, err := json.Marshal(payload)
 
 	if err != nil {
-		a.debug("failed to marshal payload")
 		return nil, err
 	}
 
@@ -48,7 +47,6 @@ func (a *Api) GetRoomBusyTime(
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))
 
 	if err != nil {
-		a.debug("failed to create request")
 		return nil, err
 	}
 
@@ -60,7 +58,6 @@ func (a *Api) GetRoomBusyTime(
 	resp, err := client.Do(req)
 
 	if err != nil {
-		a.debug("failed to do request")
 		return nil, err
 	}
 
@@ -73,7 +70,6 @@ func (a *Api) GetRoomBusyTime(
 
 	var response BusyTimeResponse
 	if err := json.Unmarshal(data, &response); err != nil {
-		a.debug("failed to unmarshal response: " + err.Error())
 		return nil, err
 	}
 

@@ -1,15 +1,8 @@
 package models
 
 import (
-	"github.com/charmbracelet/bubbles/spinner"
+	"encoding/json"
 )
-
-type GlobalState struct {
-	currentPage string
-	spinner     spinner.Model
-	loading     bool
-	quickAction bool
-}
 
 type Selection struct {
 	Choice string
@@ -20,6 +13,7 @@ type Room struct {
 	Name    string
 	NbUsers int
 	Price   float64
+	Image   string
 }
 
 type UnavailableSlot struct {
@@ -32,4 +26,25 @@ type RoomUsage struct {
 	Name      string
 	Id        string
 	UsedSlots []UnavailableSlot
+}
+
+type Request struct {
+	UserId      string
+	Command     string
+	Text        string
+	ResponseUrl string
+	TriggerId   string
+}
+
+type InteractionDiscovery struct {
+	User struct {
+		ID string `json:"id"`
+	} `json:"user"`
+	State struct {
+		Values json.RawMessage `json:"values"`
+	} `json:"state"`
+	ResponseURL string `json:"response_url"`
+	Actions     []struct {
+		ActionID string `json:"action_id"`
+	}
 }

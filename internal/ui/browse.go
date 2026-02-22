@@ -189,6 +189,10 @@ func (b *BrowseModel) getRoomsAvailability() tea.Cmd {
 
 		user, err := authService.GetAuthData()
 
+		if err != nil {
+			return bookingFailedMsg{err: err}
+		}
+
 		apiClient := api.NewApi()
 
 		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
@@ -265,7 +269,7 @@ func (b *BrowseModel) bookRoom() tea.Cmd {
 		}
 
 		if user.Credits < pickedRoom.Price {
-			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perfor, the booking, aborting")}
+			return bookingFailedMsg{err: fmt.Errorf("not enough credits to perform the booking, aborting")}
 		}
 
 		dt := b.getStartTime(b.browsePayload.StartDate, b.browsePayload.StartHour)
