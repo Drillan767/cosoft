@@ -10,7 +10,7 @@ import (
 
 func (b *Bot) StartServer() {
 	s := http.Server{
-		Addr: ":11111",
+		Addr: ":8080",
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			slog.Info("Request received", slog.String("method", r.Method), slog.String("url", r.URL.String()))
 
