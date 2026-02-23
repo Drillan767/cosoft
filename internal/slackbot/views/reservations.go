@@ -149,6 +149,13 @@ func RenderReservationsView(r *ReservationView) slack.Block {
 			}
 		}
 
+		if len(list) == 0 {
+			list = append(
+				list,
+				slack.BlockElement(slack.NewMrkDwn(":information_source: Vous n'avez pas de réservation à venir.")),
+			)
+		}
+
 		list = append(
 			list,
 			slack.BlockElement(slack.NewDivider()),
