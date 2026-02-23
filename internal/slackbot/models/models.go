@@ -35,10 +35,10 @@ type State interface {
 	// It always returns a valid State even when an error occurs.
 	Update(*storage.Store, UpdateParams) (State, error)
 
-	// Next returns true when multiple updates are available.
+	// Next returns true when updates are available.
 	//
 	// It is usefull to iterate through multiple phases of a message, but
-	// it might have unforseen consequences later.
+	// it is only used in [QuickBookState] for the moment.
 	Next() bool
 }
 
@@ -86,6 +86,16 @@ func LoadState(store *storage.Store, userID string) (State, error) {
 // SaveState saves state in the store.
 func SaveState(store *storage.Store, userID string, state State) error {
 	return store.SetSlackState(userID, state.Type(), state)
+}
+
+// nextOnce represents an object with 1 call to Next.
+//
+// This code is meant to be embedded in states, see [BrowseState].
+type nextOnce struct{ count int }
+
+func (n *nextOnce) Next() bool {
+	n.count++
+	return n.count < 2
 }
 
 // ptr returns a pointer to a value.

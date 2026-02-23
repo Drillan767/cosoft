@@ -11,6 +11,8 @@ type LoginState struct {
 	Email    string
 	Password string
 	Error    *string
+
+	nextOnce
 }
 
 type loginValues struct {
@@ -62,8 +64,6 @@ func (s *LoginState) Update(store *storage.Store, params UpdateParams) (State, e
 
 	return s, nil
 }
-
-func (s *LoginState) Next() bool { return false }
 
 type loginParams struct {
 	Email    string

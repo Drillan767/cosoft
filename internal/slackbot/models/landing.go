@@ -7,6 +7,8 @@ import (
 
 type LandingState struct {
 	User *storage.User
+
+	nextCount int
 }
 
 func NewLandingState(store *storage.Store, userID string) (State, error) {
@@ -46,4 +48,7 @@ func (s *LandingState) Update(store *storage.Store, params UpdateParams) (State,
 	}
 }
 
-func (s *LandingState) Next() bool { return false }
+func (s *LandingState) Next() bool {
+	s.nextCount++
+	return s.nextCount < 2
+}

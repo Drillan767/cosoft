@@ -21,6 +21,8 @@ type BrowseState struct {
 	Rooms      *[]models.Room
 	PickedRoom *models.Room
 	Error      *string
+
+	nextOnce
 }
 
 type browsePayload struct {
@@ -95,8 +97,6 @@ func (s *BrowseState) Update(store *storage.Store, params UpdateParams) (State, 
 		return s, fmt.Errorf("unexpected action ID: %v", params.ActionID)
 	}
 }
-
-func (s *BrowseState) Next() bool { return false }
 
 type browseStateQuery struct {
 	Time     time.Time

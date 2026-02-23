@@ -16,6 +16,8 @@ type ReservationState struct {
 	ReservationId     *string
 	BookingStarted    bool
 	Error             *string
+
+	nextOnce
 }
 
 func newReservationState(store *storage.Store, userID string) (State, error) {
@@ -87,8 +89,6 @@ func (s *ReservationState) Update(store *storage.Store, params UpdateParams) (St
 
 	return s, nil
 }
-
-func (s *ReservationState) Next() bool { return false }
 
 type cancelReservationParams struct {
 	UserID        string

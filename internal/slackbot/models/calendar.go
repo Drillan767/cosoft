@@ -15,6 +15,8 @@ type CalendarState struct {
 	CurrentDate time.Time
 	Calendar    string
 	Error       *string
+
+	nextOnce
 }
 
 func newCalendarState() *CalendarState {
@@ -47,8 +49,6 @@ func (s *CalendarState) Update(store *storage.Store, params UpdateParams) (State
 		return s, nil
 	}
 }
-
-func (s *CalendarState) Next() bool { return false }
 
 func (s *CalendarState) load(store *storage.Store, params UpdateParams) (State, error) {
 	user, err := store.GetUserData(&params.UserID)
