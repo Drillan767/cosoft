@@ -62,6 +62,8 @@ func RenderCalendarView(c *CalendarView) slack.Block {
 			slack.NewMrkDwn(fmt.Sprintf("*%s*", dt)),
 			slack.NewDivider(),
 			slack.NewKitchenSink(c.Calendar),
+			slack.NewMrkDwn("`█`: Créneau réservé par vous"),
+			slack.NewMrkDwn("`░`: Créneau réservé par quelqu'un d'autre"),
 			slack.NewButtons(actions),
 			slack.NewDivider(),
 			slack.NewButtons([]slack.ChoicePayload{{Text: "Retour", Value: "cancel"}}),
