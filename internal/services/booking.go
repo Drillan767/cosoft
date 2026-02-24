@@ -49,14 +49,17 @@ func (s *Service) GetRoomAvailabilities(
 	date time.Time,
 	userBookings []api.Reservation,
 ) ([]string, error) {
-	rooms, err := s.store.GetRooms()
+	location, err := common.LoadLocalTime()
+	if err != nil {
+		return nil, err
+	}
 
+	rooms, err := s.store.GetRooms()
 	if err != nil {
 		return nil, err
 	}
 
 	authData, err := s.store.GetUserData(nil)
-
 	if err != nil {
 		return nil, err
 	}
@@ -75,6 +78,7 @@ func (s *Service) GetRoomAvailabilities(
 				authData.WAuthRefresh,
 				room.Id,
 				date,
+				location,
 			)
 
 			result := models.RoomUsage{
@@ -109,7 +113,6 @@ func (s *Service) NonInteractiveBooking(
 	dt time.Time,
 ) (string, error) {
 	user, err := s.store.GetUserData(nil)
-
 	if err != nil {
 		return "", err
 	}
@@ -183,7 +186,6 @@ func (s *Service) NonInteractiveBooking(
 
 	fmt.Println("booking requested room...")
 	err = clientApi.BookRoom(user.WAuth, user.WAuthRefresh, bookingPayload)
-
 	if err != nil {
 		return "", err
 	}

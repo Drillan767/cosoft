@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/services"
 	"fmt"
 	"strings"
@@ -27,7 +28,6 @@ func (ui *UI) StartApp(startPage string, allowBackNav bool) error {
 
 	// Try to get user info
 	authService, err := services.NewService()
-
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,12 @@ func validateDateIsFuture(s string) error {
 		return fmt.Errorf("date is required")
 	}
 
-	date, err := time.Parse(time.DateOnly, s)
+	location, err := common.LoadLocalTime()
+	if err != nil {
+		return err
+	}
+
+	date, err := time.ParseInLocation(time.DateOnly, s, location)
 	if err != nil {
 		return fmt.Errorf("date could not be parsed")
 	}
@@ -72,7 +77,6 @@ func validateHour(s string) error {
 	}
 
 	h, err := time.Parse(timeOnlyFormat, s)
-
 	if err != nil {
 		return fmt.Errorf("could not parse time")
 	}

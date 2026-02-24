@@ -302,8 +302,13 @@ func RenderBrowseView(b *BrowseView) slack.Block {
 func (b *BrowseView) criteriaToTime() (*time.Time, error) {
 	dt := fmt.Sprintf("%s %s", b.Date, b.Time)
 
-	parsedDt, err := time.Parse("2006-01-02 15:04", dt)
+	location, err := common.LoadLocalTime()
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
+	parsedDt, err := time.ParseInLocation("2006-01-02 15:04", dt, location)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -314,14 +319,12 @@ func (b *BrowseView) criteriaToTime() (*time.Time, error) {
 
 func (b *BrowseView) filtersToNumber() (int, int, error) {
 	nbPeople, err := strconv.Atoi(b.NbPeople)
-
 	if err != nil {
 		fmt.Println(err)
 		return 0, 0, err
 	}
 
 	duration, err := strconv.Atoi(b.Duration)
-
 	if err != nil {
 		fmt.Println(err)
 		return 0, 0, err

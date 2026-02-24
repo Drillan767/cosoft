@@ -2,6 +2,7 @@ package views
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/ui/slack"
 	"fmt"
 	"time"
@@ -57,8 +58,14 @@ func (r *ReservationView) Update(action Action) (View, Cmd) {
 			return r, nil
 		}
 
+		location, err := common.LoadLocalTime()
+		if err != nil {
+			fmt.Println(err)
+			return r, nil
+		}
+
 		// Ensure the reservation hasn't already started
-		bookinStartsAt, err := time.ParseInLocation("2006-01-02T15:04:05", r.PickedReservation.Start, time.Local)
+		bookinStartsAt, err := time.ParseInLocation("2006-01-02T15:04:05", r.PickedReservation.Start, location)
 
 		if err != nil {
 			fmt.Println(err)
@@ -91,18 +98,22 @@ func RenderReservationsView(r *ReservationView) slack.Block {
 			},
 		}
 
+		location, err := common.LoadLocalTime()
+		if err != nil {
+			fmt.Println(err)
+			return slack.Block{}
+		}
+
 		var list []slack.BlockElement
 
 		for _, r := range *r.Reservations {
-			parsedStart, err := time.Parse("2006-01-02T15:04:05", r.Start)
-
+			parsedStart, err := time.ParseInLocation("2006-01-02T15:04:05", r.Start, location)
 			if err != nil {
 				fmt.Println(err)
 				return slack.Block{}
 			}
 
-			parsedEnd, err := time.Parse("2006-01-02T15:04:05", r.End)
-
+			parsedEnd, err := time.ParseInLocation("2006-01-02T15:04:05", r.End, location)
 			if err != nil {
 				fmt.Println(err)
 				return slack.Block{}

@@ -318,8 +318,9 @@ func (b *BrowseModel) generateTable() string {
 
 func (b *BrowseModel) getStartTime(startDate, startHour string) time.Time {
 	// Already validated at this point.
-	tDate, _ := time.Parse(time.DateOnly, startDate)
-	tHour, _ := time.Parse("15:04", startHour)
+	location, _ := common.LoadLocalTime()
+	tDate, _ := time.ParseInLocation(time.DateOnly, startDate, location)
+	tHour, _ := time.ParseInLocation("15:04", startHour, location)
 
 	return time.Date(
 		tDate.Year(),
@@ -329,6 +330,6 @@ func (b *BrowseModel) getStartTime(startDate, startHour string) time.Time {
 		tHour.Minute(),
 		0,
 		0,
-		tDate.Location(),
+		location,
 	)
 }
