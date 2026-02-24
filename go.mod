@@ -1,19 +1,20 @@
 module cosoft-cli
 
-go 1.25.3
+go 1.26.0
 
 require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/huh v0.8.0
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.10.2
 	modernc.org/sqlite v1.46.1
 )
 
 require (
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
-	github.com/clipperhouse/displaywidth v0.10.0 // indirect
+	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
