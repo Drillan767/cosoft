@@ -14,6 +14,7 @@ func (a *Api) GetRoomBusyTime(
 	wAuth, wAuthRefresh string,
 	roomId string,
 	date time.Time,
+	location *time.Location,
 ) (*[]models.UnavailableSlot, error) {
 
 	type filter struct {
@@ -29,7 +30,7 @@ func (a *Api) GetRoomBusyTime(
 		59,
 		0,
 		0,
-		time.UTC,
+		location,
 	)
 	payload := filter{
 		StartDate: date,
@@ -37,7 +38,6 @@ func (a *Api) GetRoomBusyTime(
 	}
 
 	jsonPayload, err := json.Marshal(payload)
-
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,6 @@ func (a *Api) GetRoomBusyTime(
 	endpoint := fmt.Sprintf("%s/CoworkingSpace/%s/category/%s/item/%s/busytimes", apiUrl, spaceId, categoryId, roomId)
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonPayload))
-
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,6 @@ func (a *Api) GetRoomBusyTime(
 	req.Header.Set("Cookie", fmt.Sprintf("w_auth=%s; w_auth_refresh=%s", wAuth, wAuthRefresh))
 
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}

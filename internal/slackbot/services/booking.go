@@ -132,6 +132,11 @@ func (s *SlackService) getRoomsPlanning(
 	date time.Time,
 	userBookings []api.Reservation,
 ) (string, error) {
+	location, err := common.LoadLocalTime()
+	if err != nil {
+		return "", err
+	}
+
 	apiClient := api.NewApi()
 	results := make([]models.RoomUsage, len(rooms))
 	var wg sync.WaitGroup
@@ -145,6 +150,7 @@ func (s *SlackService) getRoomsPlanning(
 				user.WAuthRefresh,
 				r.Id,
 				date,
+				location,
 			)
 
 			result := models.RoomUsage{

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cosoft-cli/internal/api"
+	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/services"
 	"cosoft-cli/internal/ui/components"
 	"fmt"
@@ -126,15 +127,18 @@ func (rl *ReservationListModel) View() string {
 func (rl *ReservationListModel) buildForm() error {
 	list := make([]components.Item[string], len(rl.reservations.Data))
 
-	for i, r := range rl.reservations.Data {
-		parsedStart, err := time.Parse("2006-01-02T15:04:05", r.Start)
+	location, err := common.LoadLocalTime()
+	if err != nil {
+		return err
+	}
 
+	for i, r := range rl.reservations.Data {
+		parsedStart, err := time.ParseInLocation("2006-01-02T15:04:05", r.Start, location)
 		if err != nil {
 			return err
 		}
 
-		parsedEnd, err := time.Parse("2006-01-02T15:04:05", r.End)
-
+		parsedEnd, err := time.ParseInLocation("2006-01-02T15:04:05", r.End, location)
 		if err != nil {
 			return err
 		}
@@ -175,20 +179,17 @@ func (rl *ReservationListModel) buildForm() error {
 func (rl *ReservationListModel) cancelReservation() tea.Cmd {
 	return func() tea.Msg {
 		authService, err := services.NewService()
-
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}
 
 		user, err := authService.GetAuthData()
-
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}
 
 		apiClient := api.NewApi()
 		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.bookingId)
-
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}
@@ -200,13 +201,11 @@ func (rl *ReservationListModel) cancelReservation() tea.Cmd {
 func (rl *ReservationListModel) fetchFutureBookings() tea.Cmd {
 	return func() tea.Msg {
 		authService, err := services.NewService()
-
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}
 
 		user, err := authService.GetAuthData()
-
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}

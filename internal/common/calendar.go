@@ -56,13 +56,15 @@ func createCalendarRow(
 		End   time.Time
 	}
 
+	location, _ := LoadLocalTime()
+
 	var slots []parsedSlot
 	spacing := labelLength - len(row.Name)
 	columns := ""
 
 	for _, slot := range row.UsedSlots {
-		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
-		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
+		start, _ := time.ParseInLocation("2006-01-02T15:04:05", slot.Start, location)
+		end, _ := time.ParseInLocation("2006-01-02T15:04:05", slot.End, location)
 
 		slots = append(slots, parsedSlot{
 			Start: start,
@@ -77,8 +79,8 @@ func createCalendarRow(
 			continue
 		}
 
-		start, _ := time.Parse("2006-01-02T15:04:05", slot.Start)
-		end, _ := time.Parse("2006-01-02T15:04:05", slot.End)
+		start, _ := time.ParseInLocation("2006-01-02T15:04:05", slot.Start, location)
+		end, _ := time.ParseInLocation("2006-01-02T15:04:05", slot.End, location)
 		userSlots = append(userSlots, parsedSlot{
 			Start: start,
 			End:   end,

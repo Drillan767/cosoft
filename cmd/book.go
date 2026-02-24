@@ -14,6 +14,7 @@ var bookCmd = &cobra.Command{
 	Use:   "book",
 	Short: "Quickly book a room with arguments",
 	Run: func(cmd *cobra.Command, args []string) {
+		location, _ := common.LoadLocalTime()
 		nbUsers, err := cmd.Flags().GetInt("capacity")
 		if err != nil {
 			fmt.Println(err)
@@ -47,7 +48,7 @@ var bookCmd = &cobra.Command{
 		if date == "" {
 			parsedTime = common.GetClosestQuarterHour()
 		} else {
-			parsedTime, err = time.Parse("2006-01-02T15:04", date)
+			parsedTime, err = time.ParseInLocation("2006-01-02T15:04", date, location)
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
