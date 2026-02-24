@@ -57,6 +57,10 @@ func LoadState(store *storage.Store, userID string) (State, error) {
 		return nil, fmt.Errorf("get slack state: %v", err)
 	}
 
+	if state == nil {
+		return &LandingState{}, nil
+	}
+
 	var s State
 	switch state.MessageType {
 	case browseStateType:
