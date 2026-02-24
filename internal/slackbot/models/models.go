@@ -58,7 +58,7 @@ func LoadState(store *storage.Store, userID string) (State, error) {
 	}
 
 	if state == nil {
-		return &LandingState{}, nil
+		return NewLandingState(store, userID)
 	}
 
 	var s State
