@@ -5,6 +5,7 @@ import (
 	"cosoft-cli/internal/common"
 	"cosoft-cli/internal/services"
 	"cosoft-cli/internal/ui/components"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,13 +16,14 @@ import (
 )
 
 type ReservationListModel struct {
-	phase        int
-	confirmed    bool
-	bookingId    string
-	reservations api.FutureBookingsResponse
-	form         *huh.Form
-	spinner      spinner.Model
-	err          error
+	phase             int
+	confirmed         bool
+	reservations      api.FutureBookingsResponse
+	pickedReservation api.Reservation
+	form              *huh.Form
+	spinner           spinner.Model
+	err               error
+	location          *time.Location
 }
 
 type cancelComplete struct{}
@@ -35,7 +37,6 @@ func NewReservationListModel() *ReservationListModel {
 		phase:     1,
 		confirmed: false,
 		spinner:   s,
-		bookingId: "",
 	}
 }
 
@@ -125,46 +126,46 @@ func (rl *ReservationListModel) View() string {
 }
 
 func (rl *ReservationListModel) buildForm() error {
-	list := make([]components.Item[string], len(rl.reservations.Data))
-
 	location, err := common.LoadLocalTime()
 	if err != nil {
 		return err
 	}
+	rl.location = location
 
-	for i, r := range rl.reservations.Data {
-		parsedStart, err := time.ParseInLocation("2006-01-02T15:04:05", r.Start, location)
+	dateFormat := "02/01/2006 15:04"
+	var list []components.Item[api.Reservation]
+
+	for _, r := range rl.reservations.Data {
+		parsedStart, err := rl.parseDate(r.Start)
 		if err != nil {
 			return err
 		}
 
-		parsedEnd, err := time.ParseInLocation("2006-01-02T15:04:05", r.End, location)
+		parsedEnd, err := rl.parseDate(r.End)
 		if err != nil {
 			return err
 		}
 
 		duration := parsedEnd.Sub(parsedStart).Minutes()
-
 		paidPrice := r.Credits * (float64(duration) / 60)
 
-		dateFormat := "02/01/2006 15:04"
-
-		list[i] = components.Item[string]{
+		list = append(list, components.Item[api.Reservation]{
 			Label: r.ItemName,
-			Value: r.OrderResourceRentId,
+			Value: r,
 			Subtitle: fmt.Sprintf(
 				"%s → %s · %.02f credits",
 				parsedStart.Format(dateFormat),
 				parsedEnd.Format(dateFormat),
 				paidPrice,
 			),
-		}
+		})
 	}
 
 	rl.form = huh.NewForm(
 		huh.NewGroup(
 			components.NewListField(list, "Pick a reservation to cancel it").
-				Value(&rl.bookingId),
+				Value(&rl.pickedReservation).
+				Validate(validateReservation),
 			huh.NewConfirm().
 				Title("Confirm cancellation?").
 				Negative("No").
@@ -189,7 +190,7 @@ func (rl *ReservationListModel) cancelReservation() tea.Cmd {
 		}
 
 		apiClient := api.NewApi()
-		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.bookingId)
+		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.pickedReservation.OrderResourceRentId)
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}
@@ -218,4 +219,26 @@ func (rl *ReservationListModel) fetchFutureBookings() tea.Cmd {
 			err:      err,
 		}
 	}
+}
+
+func (rl *ReservationListModel) parseDate(date string) (time.Time, error) {
+	return time.ParseInLocation("2006-01-02T15:04:05", date, rl.location)
+}
+
+func validateReservation(r api.Reservation) error {
+	location, err := common.LoadLocalTime()
+	if err != nil {
+		return err
+	}
+
+	parsedStart, err := time.ParseInLocation("2006-01-02T15:04:05", r.Start, location)
+	if err != nil {
+		return err
+	}
+
+	if parsedStart.Before(time.Now()) {
+		return errors.New("this reservation has already started and cannot be cancelled")
+	}
+
+	return nil
 }
