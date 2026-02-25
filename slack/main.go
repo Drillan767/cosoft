@@ -6,6 +6,7 @@ import (
 	"cosoft-cli/internal/storage"
 	"log"
 	"os"
+	_ "time/tzdata"
 
 	"github.com/joho/godotenv"
 )
