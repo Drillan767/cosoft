@@ -16,6 +16,12 @@ type CalendarCmd struct {
 	Time time.Time
 }
 
+func sameDay(a, b time.Time) bool {
+	ay, am, ad := a.Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
+}
+
 func NewCalendarView() *CalendarView {
 	return &CalendarView{
 		CurrentDate: time.Now(),
@@ -32,8 +38,7 @@ func (c *CalendarView) Update(action Action) (View, Cmd) {
 			Time: c.CurrentDate,
 		}
 	case "prev-day":
-		today := time.Now().Truncate(24 * time.Hour)
-		if c.CurrentDate.Truncate(24 * time.Hour).Equal(today) {
+		if sameDay(c.CurrentDate, time.Now()) {
 			// already on today, can't go back
 			return c, nil
 		}
@@ -46,7 +51,7 @@ func (c *CalendarView) Update(action Action) (View, Cmd) {
 
 func RenderCalendarView(c *CalendarView) slack.Block {
 	dt := c.CurrentDate.Format("02/01/2006")
-	isToday := c.CurrentDate.Truncate(24 * time.Hour).Equal(time.Now().Truncate(24 * time.Hour))
+	isToday := sameDay(c.CurrentDate, time.Now())
 	actions := []slack.ChoicePayload{{Text: "Jour suivant", Value: "next-day"}}
 
 	if !isToday {

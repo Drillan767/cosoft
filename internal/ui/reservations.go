@@ -236,7 +236,7 @@ func validateReservation(r api.Reservation) error {
 		return err
 	}
 
-	if parsedStart.After(time.Now()) {
+	if parsedStart.Before(time.Now()) {
 		return errors.New("this reservation has already started and cannot be cancelled")
 	}
 

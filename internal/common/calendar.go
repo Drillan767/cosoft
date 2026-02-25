@@ -89,7 +89,8 @@ func createCalendarRow(
 
 	now := GetClosestQuarterHour()
 
-	baseDate := slots[0].Start.Truncate(24 * time.Hour)
+	year, month, day := slots[0].Start.Date()
+	baseDate := time.Date(year, month, day, 0, 0, 0, 0, location)
 	startTime := baseDate.Add(8 * time.Hour)
 	endTime := baseDate.Add(23 * time.Hour)
 	counter := 0
