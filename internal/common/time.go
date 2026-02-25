@@ -34,11 +34,8 @@ func GetClosestQuarterHour() time.Time {
 
 func LoadLocalTime() (*time.Location, error) {
 	l := os.Getenv("TZ")
-	if l == "" {
-		return time.Local, nil
-	}
-
 	location, err := time.LoadLocation(l)
+
 	if err != nil {
 		return nil, err
 	}

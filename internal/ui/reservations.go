@@ -18,7 +18,6 @@ import (
 type ReservationListModel struct {
 	phase             int
 	confirmed         bool
-	bookingId         string
 	reservations      api.FutureBookingsResponse
 	pickedReservation api.Reservation
 	form              *huh.Form
@@ -38,7 +37,6 @@ func NewReservationListModel() *ReservationListModel {
 		phase:     1,
 		confirmed: false,
 		spinner:   s,
-		bookingId: "",
 	}
 }
 
@@ -192,7 +190,7 @@ func (rl *ReservationListModel) cancelReservation() tea.Cmd {
 		}
 
 		apiClient := api.NewApi()
-		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.bookingId)
+		err = apiClient.CancelBooking(user.WAuth, user.WAuthRefresh, rl.pickedReservation.OrderResourceRentId)
 		if err != nil {
 			return futureBookingMsg{err: err}
 		}
@@ -232,13 +230,13 @@ func validateReservation(r api.Reservation) error {
 	if err != nil {
 		return err
 	}
-	
+
 	parsedStart, err := time.ParseInLocation("2006-01-02T15:04:05", r.Start, location)
 	if err != nil {
 		return err
 	}
 
-	if !parsedStart.After(time.Now()) {
+	if parsedStart.After(time.Now()) {
 		return errors.New("this reservation has already started and cannot be cancelled")
 	}
 
